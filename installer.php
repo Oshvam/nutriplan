@@ -85,12 +85,15 @@ if ($step === 2 && $_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($err === '') {
         $src = $_POST['zipsrc'] ?? 'upload';
         $zipPath = '';
+        $localZips = array_map('basename', glob(getcwd() . '/*.zip') ?: []);
         if ($src === 'upload' && !empty($_FILES['zipfile']['tmp_name']) && is_uploaded_file($_FILES['zipfile']['tmp_name'])) {
             $zipPath = getcwd() . '/' . basename($_FILES['zipfile']['name']);
             if (!@move_uploaded_file($_FILES['zipfile']['tmp_name'], $zipPath)) $err = 'No se pudo guardar el ZIP subido (revisa upload_max_filesize).';
         } elseif ($src === 'existing' && !empty($_POST['zipname'])) {
             $zipPath = getcwd() . '/' . basename($_POST['zipname']);
             if (!is_file($zipPath)) $err = 'El ZIP indicado no existe.';
+        } elseif ($src === 'upload' && $localZips) {
+            $zipPath = getcwd() . '/' . $localZips[0];
         } elseif ($src === 'github') {
             $repo = trim($_POST['repo'] ?? 'Oshvam/nutriplan');
             if (!preg_match('#^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$#', $repo)) $err = 'Repo no valido (formato usuario/nombre).';
@@ -130,7 +133,10 @@ if ($step === 2 && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // ---- Paso 4: conectar BD, importar esquema, escribir .env ----
 if ($step === 4 && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    $appdir = $_SESSION['np_appdir'] ?? getcwd();
+    $posted = trim($_POST['appdir'] ?? '');
+    if ($posted === '' || $posted === '.') $appdir = getcwd();
+    elseif (preg_match('#^[A-Za-z0-9_-]+$#', $posted)) $appdir = getcwd() . '/' . $posted;
+    else $appdir = $_SESSION['np_appdir'] ?? getcwd();
     if (!is_file($appdir . '/config.php')) { $err = 'No se encuentra la app (repite el paso 2).'; $step = 1; }
     else {
         $db = array_map('trim', [
@@ -197,6 +203,10 @@ $guessUrl = baseUrl() . ((($_SESSION['np_appdir'] ?? getcwd()) === getcwd()) ? '
 <style>
 body{font-family:system-ui,Segoe UI,Roboto,sans-serif;background:#f1f5f9;color:#0f172a;margin:0;padding:24px}
 .card{max-width:640px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:24px}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#059669,#2dd4bf);display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
+.logo svg{width:22px;height:22px}
+.name{font-size:22px;font-weight:800;letter-spacing:-0.02em}.name small{font-weight:400;color:#64748b;font-size:15px}
 h1{font-size:22px;margin:0 0 4px}.sub{color:#64748b;margin:0 0 16px}
 .ok{color:#15803d}.bad{color:#dc2626}
 ul.check{list-style:none;padding:0}ul.check li{margin:4px 0}
@@ -212,7 +222,7 @@ a{color:#059669}
 </head>
 <body>
 <div class="card">
-<h1>🥗 NutriPlan · Instalador</h1>
+<div class="brand"><span class="logo"><i data-lucide="apple"></i></span><span class="name">NutriPlan <small>· Instalador</small></span></div>
 <p class="sub">Paso <?= min($step, 5) ?> de 4</p>
 <?php if ($err !== '') echo '<div class="err">' . h($err) . '</div>'; ?>
 <?php if ($msg !== '') echo '<div class="msg">' . $msg . '</div>'; ?>
@@ -227,14 +237,14 @@ a{color:#059669}
 <?php if (!$allOk): ?><div class="err">Falta algun requisito: pide a tu hosting que lo active.</div><?php endif; ?>
 <form method="post" enctype="multipart/form-data">
 <input type="hidden" name="next_step" value="2">
-<label><input type="radio" name="zipsrc" value="upload" checked> Subir ZIP desde mi equipo</label>
+<label><input type="radio" name="zipsrc" value="upload" <?= $zips ? '' : 'checked' ?>> Subir ZIP desde mi equipo</label>
 <input type="file" name="zipfile" accept=".zip">
-<label style="margin-top:12px"><input type="radio" name="zipsrc" value="existing" <?= $zips ? '' : 'disabled' ?>> Usar ZIP ya subido</label>
+<label style="margin-top:12px"><input type="radio" name="zipsrc" value="existing" <?= $zips ? 'checked' : 'disabled' ?>> Usar ZIP ya subido</label>
 <?php if ($zips): ?><select name="zipname"><?php foreach ($zips as $z): ?><option><?= h($z) ?></option><?php endforeach; ?></select>
 <?php else: ?><p class="sub">No hay ningun .zip junto al installer.</p><?php endif; ?>
 <label style="margin-top:12px"><input type="radio" name="zipsrc" value="github"> Descargar de GitHub (releases)</label>
 <input type="text" name="repo" value="Oshvam/nutriplan" placeholder="usuario/repo">
-<label>Carpeta destino (vacio = aqui mismo)</label>
+<label>Carpeta destino (vacio = aqui mismo, p. ej. tu public_html)</label>
 <input type="text" name="target" value="" placeholder="p. ej. nutriplan">
 <label><input type="checkbox" name="delzip" value="1" checked> Borrar el ZIP despues de extraer</label>
 <p><button <?= $allOk ? '' : 'disabled' ?>>Extraer y continuar →</button></p>
@@ -244,6 +254,7 @@ a{color:#059669}
 <?php if (is_file($appdir . '/.env')) echo '<div class="err">Ya existe un .env en la app: si continuas lo SOBREESCRIBIRE.</div>'; ?>
 <form method="post">
 <input type="hidden" name="next_step" value="4">
+<input type="hidden" name="appdir" value="<?= h($appdir === getcwd() ? '.' : basename($appdir)) ?>">
 <label>MySQL host</label><input type="text" name="db_host" value="localhost" required>
 <label>Nombre de la base de datos (ya creada en tu panel)</label><input type="text" name="db_name" value="nutriplan" required>
 <label>Usuario MySQL</label><input type="text" name="db_user" required>
@@ -271,5 +282,7 @@ $pubNote = (($_SESSION['np_appdir'] ?? getcwd()) === getcwd())
 </p>
 <?php endif; ?>
 </div>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script>if (window.lucide) lucide.createIcons();</script>
 </body>
 </html>
