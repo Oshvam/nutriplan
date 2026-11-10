@@ -89,6 +89,15 @@ instalador, que te guía en el navegador.
 5. Paso 4: apunta el DocumentRoot a `public/`, añade tu dominio a los
    orígenes de Google y **borra el instalador** con el botón (o `?bye=1`).
 
+> **Si tu panel no deja cambiar el DocumentRoot** (p. ej. DirectAdmin sirve
+> `public_html/` y ves un **403** al entrar): sube el fichero
+> `public_html.htaccess` del repo a la raíz de tu hosting renombrado como
+> `.htaccess`. Reenvía todo a `public/` sin mostrarlo en las URLs.
+> Si aun así ves un **500**, revisa en este orden: `vendor/` subido
+> (o `composer install` en el servidor), `.env` creado con datos válidos,
+> base de datos importada (`database/schema.sql`) y el log de errores PHP
+> del panel.
+
 ### Auto-actualización desde GitHub
 
 En `/perfil` → Ajustes hay un bloque de versión: coteja tu `version.txt` con
