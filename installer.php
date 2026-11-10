@@ -1,7 +1,7 @@
 <?php
 // NutriPlan · Autoinstalador web estilo WordPress.
-// Uso: sube este fichero + el ZIP de la app (nutriplan-deploy.zip o el de
-// GitHub) a tu hosting y abre http://tu-dominio/installer.php
+// Uso: sube este fichero + el ZIP de la app (nutriplan-vX.Y.Z.zip,
+// generado en local con deploy-ftp.ps1 -Zip) a tu hosting y abre http://tu-dominio/installer.php
 // Guia: 1) requisitos + ZIP, 2) extraer, 3) base de datos + .env, 4) listo.
 // Al terminar, borrate a ti mismo con el boton. No requiere SSH ni Composer.
 declare(strict_types=1);
@@ -223,7 +223,7 @@ a{color:#059669}
 <body>
 <div class="card">
 <div class="brand"><span class="logo"><i data-lucide="apple"></i></span><span class="name">NutriPlan <small>· Instalador</small></span></div>
-<p class="sub">Paso <?= min($step, 5) ?> de 4</p>
+<p class="sub">Paso <?= [1 => 1, 2 => 2, 3 => 3][$step] ?? 4 ?> de 4</p>
 <?php if ($err !== '') echo '<div class="err">' . h($err) . '</div>'; ?>
 <?php if ($msg !== '') echo '<div class="msg">' . $msg . '</div>'; ?>
 
@@ -242,7 +242,7 @@ a{color:#059669}
 <label style="margin-top:12px"><input type="radio" name="zipsrc" value="existing" <?= $zips ? 'checked' : 'disabled' ?>> Usar ZIP ya subido</label>
 <?php if ($zips): ?><select name="zipname"><?php foreach ($zips as $z): ?><option><?= h($z) ?></option><?php endforeach; ?></select>
 <?php else: ?><p class="sub">No hay ningun .zip junto al installer.</p><?php endif; ?>
-<label style="margin-top:12px"><input type="radio" name="zipsrc" value="github"> Descargar de GitHub (releases)</label>
+<label style="margin-top:12px"><input type="radio" name="zipsrc" value="github"> Descargar de GitHub (rama main)</label>
 <input type="text" name="repo" value="Oshvam/nutriplan" placeholder="usuario/repo">
 <label>Carpeta destino (vacio = aqui mismo, p. ej. tu public_html)</label>
 <input type="text" name="target" value="" placeholder="p. ej. nutriplan">
