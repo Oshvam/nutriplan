@@ -1,0 +1,33 @@
+{% extends "layout.twig" %}
+{% block title %}{{ r.title }} · NutriPlan{% endblock %}
+{% block body %}
+<main class="max-w-7xl mx-auto px-4 py-4 space-y-4">
+  <a href="{{ back }}" class="text-sm text-emerald-700 dark:text-emerald-400 font-medium">← Volver</a>
+  <article class="rounded-2xl bg-white dark:bg-slate-900 shadow-sm p-5">
+    <h1 class="text-xl font-bold">{{ r.imageEmoji }} {{ r.title }}</h1>
+    <p class="text-sm text-slate-500">{{ r.subtitle }}</p>
+    <div class="flex gap-2 mt-3 text-sm">
+      {% for n in [1,2,4] %}
+        <a href="/receta?id={{ r.id }}&r={{ n }}{{ dia is not null ? '&dia=' ~ dia : '' }}{{ slot ? '&slot=' ~ slot : '' }}&back={{ back|url_encode }}" class="px-3 py-1.5 rounded-full font-bold {{ serv == n ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800' }}">{{ n }} {{ n == 1 ? 'ración' : 'raciones' }}</a>
+      {% endfor %}
+    </div>
+    <p class="text-sm mt-3 font-medium flex items-center gap-1 flex-wrap">{{ (r.calories * serv)|round }} kcal · P{{ (r.protein * serv)|round }} C{{ (r.carbs * serv)|round }} G{{ (r.fat * serv)|round }} · <i data-lucide="clock" class="h-3.5 w-3.5"></i> {{ r.prepTimeMinutes }} min · Fibra {{ (r.fiber * serv)|round }}g</p>
+    {% if r.allergens|length %}<p class="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950 rounded-xl px-3 py-2 mt-2 flex items-center gap-1.5"><i data-lucide="triangle-alert" class="h-4 w-4 shrink-0"></i> <span>Alérgenos: {{ r.allergens|join(', ') }}</span></p>{% endif %}
+    {% if r.clinicalNotes %}<p class="text-xs text-slate-500 mt-2 flex items-start gap-1.5"><i data-lucide="stethoscope" class="h-3.5 w-3.5 mt-0.5 shrink-0"></i> <span>{{ r.clinicalNotes }}</span></p>{% endif %}
+
+    <h2 class="font-bold mt-4 mb-1">Ingredientes (en crudo, {{ serv }} {{ serv == 1 ? 'ración' : 'raciones' }})</h2>
+    <ul class="text-sm space-y-1">
+      {% for g in r.ingredients %}
+        <li>· <strong>{{ (g.quantity * serv)|round(1) }} {{ g.unit }}</strong> {{ g.name }}{% if g.note %} <span class="text-slate-500">({{ g.note }})</span>{% endif %}</li>
+      {% endfor %}
+    </ul>
+    <h2 class="font-bold mt-4 mb-1">Pasos</h2>
+    <ol class="text-sm space-y-1.5 list-decimal list-inside">
+      {% for s in r.instructions %}<li>{{ s }}</li>{% endfor %}
+    </ol>
+    {% if dia is not null and slot %}
+      <button data-act="apply" data-recipe="{{ r|json_encode|e('html_attr') }}" data-dia="{{ dia }}" data-slot="{{ slot }}" data-back="{{ back }}" class="mt-4 w-full px-4 py-3 rounded-2xl bg-emerald-600 text-white font-bold inline-flex items-center justify-center gap-2"><i data-lucide="check" class="h-4 w-4"></i> Elegir para este momento</button>
+    {% endif %}
+  </article>
+</main>
+{% endblock %}

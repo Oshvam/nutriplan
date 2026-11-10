@@ -1,0 +1,114 @@
+{% extends "layout.twig" %}
+{% block title %}Mi perfil · NutriPlan{% endblock %}
+{% set goalNames = {'perder_peso':'Perder peso','mantener_peso':'Mantener peso','ganar_peso':'Ganar músculo'} %}
+{% block body %}
+<main class="max-w-7xl mx-auto px-4 py-4 space-y-4">
+  <section class="rounded-2xl bg-white dark:bg-slate-900 shadow-sm p-4 flex items-center gap-3">
+<div class="w-12 h-12 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xl font-bold">{{ (user.name ?? 'U')|slice(0,1)|upper }}</div>
+    <div class="flex-1 min-w-0">
+      <p class="font-bold truncate">{{ user.name ?? 'Mi cuenta' }}</p>
+      <p class="text-xs text-slate-500 truncate">{{ user.email ?? '' }} · <span class="text-emerald-600 inline-flex items-center gap-1"><i data-lucide="check" class="h-3.5 w-3.5"></i> Google</span></p>
+    </div>
+    <button data-act="logout" class="text-sm px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800">Salir</button>
+  </section>
+
+  <section class="rounded-2xl p-5 text-white bg-gradient-to-r from-emerald-600 to-teal-500 shadow text-center">
+    <div class="w-16 h-16 mx-auto rounded-full bg-white/20 flex items-center justify-center text-3xl font-bold">{{ (user.name ?? profile.name ?? 'U')|slice(0,1)|upper }}</div>
+    <h1 class="text-xl font-bold mt-2">{{ profile.name ?? user.name ?? 'Mi plan' }}</h1>
+    <p class="text-emerald-50 text-sm">{{ goalNames[profile.goal] ?? profile.goal }} · {{ needs.targetCalories }} kcal/día</p>
+    <div class="flex flex-wrap justify-center gap-2 mt-3 text-sm font-medium">
+      <a href="/config" class="px-3 py-1.5 rounded-full bg-white text-emerald-700"><i data-lucide="settings" class="h-4 w-4 text-emerald-600 dark:text-emerald-400"></i> Configurar plan</a>
+      <a href="#pautas" class="px-3 py-1.5 rounded-full bg-white/20"><i data-lucide="book-open" class="inline h-4 w-4"></i> Pautas clínicas</a>
+      <a href="#ajustes" class="px-3 py-1.5 rounded-full bg-white/20"><i data-lucide="key-round" class="inline h-4 w-4"></i> Ajustes Mistral</a>
+    </div>
+  </section>
+
+  <section class="rounded-2xl bg-white dark:bg-slate-900 shadow-sm p-4">
+    <h2 class="font-bold mb-2">Nombre</h2>
+    <form id="name-form" class="flex gap-2">
+      <input type="text" id="profile-name" value="{{ profile.name ?? '' }}" class="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent p-2 text-sm" />
+      <button class="px-4 py-2 rounded-full bg-emerald-600 text-white text-sm font-bold">Guardar</button>
+    </form>
+    <div class="flex flex-wrap gap-4 mt-3 text-sm">
+      <label class="flex items-center gap-2"><input type="checkbox" id="tgl-meals" class="w-5 h-5 accent-emerald-600" /> Recordatorios de comidas</label>
+      <label class="flex items-center gap-2"><input type="checkbox" id="tgl-summary" class="w-5 h-5 accent-emerald-600" /> Resumen semanal</label>
+    </div>
+    <div class="mt-3 text-sm rounded-xl bg-slate-50 dark:bg-slate-800 p-3" data-vapid="{{ vapid }}">
+      <p class="font-medium"><i data-lucide="bell" class="h-4 w-4 text-emerald-600 dark:text-emerald-400"></i> Notificaciones push <span id="push-state" class="text-slate-500 text-xs"></span></p>
+      <button id="push-btn" class="mt-2 px-3 py-1.5 rounded-full bg-emerald-600 text-white text-xs font-bold">Activar en este dispositivo</button>
+    </div>
+  </section>
+
+  <section id="pautas" class="rounded-2xl bg-white dark:bg-slate-900 shadow-sm p-4 text-sm space-y-2">
+    <h2 class="font-bold text-base"><i data-lucide="book-open" class="inline h-4 w-4 text-emerald-600 dark:text-emerald-400"></i> Pautas clínicas</h2>
+    <p><strong>5–6 comidas al día</strong> en horarios regulares, sin saltarte ninguna.</p>
+    <p><strong>Si se suma, se debe restar:</strong> todo extra (caprichos, alcohol, salsas) se compensa reduciendo la siguiente ingesta. Puntos críticos: picoteo entre horas, bebidas azucaradas y alcohol, “solo un poco” a diario, cenar tarde y pesado.</p>
+    <p><strong>Criterios SEEDO:</strong> sobrepeso ≥25, obesidad ≥30. Objetivo realista: <strong>8–10% del peso en 6 meses</strong> (≈0,5–1 kg/semana).</p>
+    <p><strong>Hidratación y ejercicio:</strong> agua fuera de las comidas; 45–60 min de actividad moderada casi a diario + fuerza 2–3 veces por semana.</p>
+  </section>
+
+  <section id="ajustes" class="rounded-2xl bg-white dark:bg-slate-900 shadow-sm p-4 text-sm space-y-2">
+    <h2 class="font-bold text-base"><i data-lucide="plug" class="h-4 w-4 text-emerald-600 dark:text-emerald-400"></i> Ajustes de Mistral (IA)</h2>
+    <p class="text-slate-500">Estado: {{ mistral.configured ? 'configurada (' ~ mistral.masked ~ ')' : 'sin clave (se usan recetas de respaldo)' }}</p>
+    <button type="button" data-open-settings class="px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition-colors">Abrir ajustes</button>
+    <div class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+      <p class="font-semibold"><i data-lucide="refresh-cw" class="inline h-4 w-4 text-emerald-600 dark:text-emerald-400"></i> Actualizaciones</p>
+      <p class="text-slate-500 mt-1">Versión instalada: {{ app_version }} · <span id="upd-state">sin comprobar</span></p>
+      <div class="flex flex-wrap gap-2 mt-2">
+        <button type="button" id="upd-check" class="px-4 py-2 rounded-full bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-sm font-bold transition-colors">Buscar actualizaciones</button>
+        <button type="button" id="upd-run" class="hidden px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition-colors">Actualizar ahora</button>
+      </div>
+      <p id="upd-msg" class="text-xs mt-2 min-h-[1rem] text-slate-500"></p>
+    </div>
+  </section>
+
+  <section class="rounded-2xl bg-white dark:bg-slate-900 shadow-sm p-4">
+    <h2 class="font-bold text-base mb-2"><i data-lucide="trending-down" class="inline h-4 w-4 text-emerald-600 dark:text-emerald-400"></i> Seguimiento de peso</h2>
+    {% if wstats %}
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-center text-sm mb-3">
+        <div class="rounded-xl bg-slate-50 dark:bg-slate-800 p-2">Inicial<br><strong>{{ wstats.initial }} kg</strong></div>
+        <div class="rounded-xl bg-slate-50 dark:bg-slate-800 p-2">Actual · IMC {{ wstats.bmi }}<br><strong>{{ wstats.current }} kg</strong></div>
+        <div class="rounded-xl bg-slate-50 dark:bg-slate-800 p-2">Objetivo<br><strong>{{ wstats.target }} kg</strong> ({{ wstats.toGo }} kg)</div>
+        <div class="rounded-xl bg-slate-50 dark:bg-slate-800 p-2">Cambio<br><strong>{{ wstats.change }} kg</strong> ({{ wstats.pct }}%)</div>
+      </div>
+      <svg viewBox="0 0 {{ wstats.svg.w }} {{ wstats.svg.h }}" class="w-full h-auto rounded-xl bg-slate-50 dark:bg-slate-800">
+        <defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#10b981" stop-opacity="0.35"/><stop offset="1" stop-color="#10b981" stop-opacity="0.02"/>
+        </linearGradient></defs>
+        <text x="4" y="20" font-size="10" fill="currentColor" opacity="0.6">{{ wstats.svg.max|round(1) }}</text>
+        <text x="4" y="{{ wstats.svg.h - 6 }}" font-size="10" fill="currentColor" opacity="0.6">{{ wstats.svg.min|round(1) }}</text>
+        <line x1="34" y1="{{ wstats.svg.targetY }}" x2="628" y2="{{ wstats.svg.targetY }}" stroke="#f43f5e" stroke-dasharray="6 4" stroke-width="1.5" />
+        <polygon points="{{ wstats.svg.area }}" fill="url(#wg)" />
+        <polyline points="{{ wstats.svg.line }}" fill="none" stroke="#059669" stroke-width="2.5" />
+        {% for p in wstats.svg.pts %}
+          <circle cx="{{ p.x }}" cy="{{ p.y }}" r="4" fill="#059669"><title>{{ p.date }}: {{ p.weight }} kg</title></circle>
+        {% endfor %}
+      </svg>
+    {% else %}
+      <p class="text-sm text-slate-500">Aún no hay registros. Añade el primero:</p>
+    {% endif %}
+    <form id="weight-form" class="flex flex-wrap gap-2 mt-3 text-sm">
+      <input type="date" id="w-date" value="{{ 'now'|date('Y-m-d') }}" class="rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent p-2" />
+      <input type="number" id="w-weight" step="0.1" min="25" max="350" placeholder="kg" class="rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent p-2 w-24" required />
+      <input type="text" id="w-note" maxlength="200" placeholder="Nota (opcional)" class="rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent p-2 flex-1" />
+      <button class="px-4 py-2 rounded-full bg-emerald-600 text-white font-bold">Añadir</button>
+    </form>
+    {% if hist|length %}
+      <table class="w-full text-sm mt-3">
+        <thead><tr class="text-left text-xs text-slate-500"><th class="py-1">Fecha</th><th>Peso</th><th>Nota</th><th></th></tr></thead>
+        <tbody>
+          {% for rec in hist|reverse %}
+            {% set prev = hist[hist|length - loop.index - 1] ?? null %}
+            <tr class="border-t border-slate-100 dark:border-slate-800">
+              <td class="py-1.5">{{ rec.date }}</td>
+              <td>{{ rec.weight }} kg {% if prev %}<span class="text-xs text-slate-500">({{ (rec.weight - prev.weight)|round(1) }})</span>{% endif %}</td>
+              <td class="text-slate-500">{{ rec.note ?? '' }}</td>
+              <td class="text-right">{% if hist|length > 1 %}<button data-act="wdel" data-date="{{ rec.date }}" class="text-red-500" title="Borrar"><i data-lucide="trash-2" class="h-4 w-4"></i></button>{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}

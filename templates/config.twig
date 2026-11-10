@@ -1,0 +1,215 @@
+{% extends "layout.twig" %}
+{% block title %}Perfil nutricional · NutriPlan{% endblock %}
+{% block body %}
+<div class="space-y-4 sm:space-y-6 max-w-3xl mx-auto px-4 py-4">
+  <form id="onb" method="post" action="/config">
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full shadow-2xl overflow-hidden transition-all">
+    <div class="px-4 sm:px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
+      {% if not isNew %}
+      <a href="/perfil" class="p-2 -ml-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0" aria-label="Volver a mi perfil"><span aria-hidden="true">←</span></a>
+      {% endif %}
+      <div class="min-w-0">
+        <h2 class="text-lg sm:text-xl font-bold font-display text-slate-900 dark:text-white">Perfil Nutricional Personalizado</h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Ajuste clínico de objetivos, cálculo metabólico y restricciones alimentarias</p>
+      </div>
+    </div>
+
+    <div class="bg-slate-50 dark:bg-slate-800/50 px-4 sm:px-6 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 text-xs">
+      <div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto min-w-0" id="steps-bar">
+        {% for s in [{'num':1,'label':'Objetivo'},{'num':2,'label':'Datos físicos'},{'num':3,'label':'Actividad'},{'num':4,'label':'Restricciones'}] %}
+        <button type="button" data-stepbtn="{{ s.num }}" data-sel="{{ loop.first ? 1 : 0 }}" class="flex items-center gap-1.5 px-2 sm:px-3 py-1 rounded-md font-medium transition-colors shrink-0 whitespace-nowrap {{ loop.first ? 'bg-emerald-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-700/60' }}">
+          <span class="font-mono tabular-nums">{{ s.num }}.</span><span>{{ s.label }}</span>
+        </button>
+        {% endfor %}
+      </div>
+      <span class="text-slate-400 dark:text-slate-500 font-mono text-[11px] shrink-0">Paso <span id="step-now">1</span> de 4</span>
+    </div>
+
+    <div class="p-4 sm:p-6 space-y-5 sm:space-y-6">
+      <fieldset data-pane="1" class="space-y-4">
+        <input type="hidden" name="goal" value="{{ profile.goal }}" />
+        <span class="block text-sm font-semibold text-slate-800 dark:text-slate-200">¿Cuál es tu objetivo nutricional principal?</span>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3" data-optgroup="goal">
+          {% for opt in [
+            {'id':'perder_peso','title':'Perder Grasa / Peso','desc':'Déficit moderado controlado (-350 a -500 kcal) según protocolo SEEDO para evitar efecto rebote.','icon':'scale'},
+            {'id':'mantener_peso','title':'Mantener Peso & Salud','desc':'Aporte normocalórico equilibrado para recomposición corporal, energía y bienestar digestivo.','icon':'heart'},
+            {'id':'ganar_peso','title':'Ganar Peso & Masa Magra','desc':'Superávit calórico (+350 a +550 kcal) de alta densidad energética para niños, jóvenes o adultos con bajo peso.','icon':'flame'}] %}
+          <button type="button" data-opt="goal" data-val="{{ opt.id }}" data-sel="{{ profile.goal == opt.id ? 1 : 0 }}" class="text-left p-4 rounded-xl border transition-all relative {{ profile.goal == opt.id ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-200 shadow-xs ring-1 ring-emerald-500' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-800/40 text-slate-700 dark:text-slate-300' }}">
+            <div class="flex items-center justify-between mb-2">
+              <div class="p-2 rounded-lg {{ profile.goal == opt.id ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400' }}"><i data-lucide="{{ opt.icon }}" class="w-5 h-5"></i></div>
+              <span class="onb-check {{ profile.goal == opt.id ? '' : 'hidden' }}"><i data-lucide="check" class="w-4 h-4 text-emerald-600 dark:text-emerald-400"></i></span>
+            </div>
+            <h3 class="font-semibold text-sm mb-1">{{ opt.title }}</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{{ opt.desc }}</p>
+          </button>
+          {% endfor %}
+        </div>
+        <div class="pt-2">
+          <label for="onb-name" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Tu nombre o identificador</label>
+          <input id="onb-name" name="name" type="text" value="{{ profile.name }}" placeholder="Ej: Marian o Marcos" class="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+        </div>
+        <div>
+          <input type="hidden" name="targetWeeks" value="{{ profile.targetWeeks }}" />
+          <span class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Horizonte de tiempo planificado</span>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" data-optgroup="targetWeeks">
+            {% for w in [{'weeks':4,'label':'4 semanas (1 mes)'},{'weeks':8,'label':'8 semanas (2 meses)'},{'weeks':12,'label':'12 semanas (3 meses)'},{'weeks':24,'label':'24 semanas (6 meses SEEDO)'}] %}
+            <button type="button" data-opt="targetWeeks" data-val="{{ w.weeks }}" data-sel="{{ profile.targetWeeks == w.weeks ? 1 : 0 }}" class="py-2 px-3 text-xs font-medium rounded-lg border transition-all {{ profile.targetWeeks == w.weeks ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-semibold' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800' }}">{{ w.label }}</button>
+            {% endfor %}
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset data-pane="2" class="space-y-4">
+        <input type="hidden" name="gender" value="{{ profile.gender }}" />
+        <input type="hidden" name="isChildOrTeen" value="{{ profile.isChildOrTeen ? 1 : 0 }}" />
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <span class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Género biológico (para fórmula metabólica)</span>
+            <div class="grid grid-cols-2 gap-2" data-optgroup="gender">
+              {% for g in ['mujer','hombre'] %}
+              <button type="button" data-opt="gender" data-val="{{ g }}" data-sel="{{ profile.gender == g ? 1 : 0 }}" class="py-2 px-3 text-xs font-medium capitalize rounded-lg border transition-all {{ profile.gender == g ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-semibold' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800' }}">{{ g }}</button>
+              {% endfor %}
+            </div>
+          </div>
+          <div>
+            <label for="onb-age" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Edad (años)</label>
+            <input id="onb-age" name="age" type="number" min="6" max="100" value="{{ profile.age }}" class="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono tabular-nums" />
+            <span id="teen-note" class="{{ profile.age < 18 ? '' : 'hidden' }} inline-block mt-1 text-[11px] text-amber-600 dark:text-amber-400">Modo crecimiento / infanto-juvenil activado (Fórmula de Schofield)</span>
+          </div>
+          <div>
+            <label for="onb-height" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Altura (cm)</label>
+            <input id="onb-height" name="height" type="number" min="100" max="230" value="{{ profile.height }}" class="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono tabular-nums" />
+          </div>
+          <div>
+            <label for="onb-weight" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Peso actual (kg)</label>
+            <input id="onb-weight" name="currentWeight" type="number" step="0.1" min="20" max="250" value="{{ profile.currentWeight }}" class="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono tabular-nums" />
+          </div>
+          <div>
+            <label for="onb-target" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Peso deseado / objetivo (kg)</label>
+            <input id="onb-target" name="targetWeight" type="number" step="0.1" min="20" max="250" value="{{ profile.targetWeight }}" class="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono tabular-nums" />
+          </div>
+          <div class="flex flex-col justify-end">
+            <div class="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs">
+              <div>
+                <span class="text-slate-500 dark:text-slate-400 block text-[11px]">IMC Calculado</span>
+                <span class="text-base font-bold text-slate-900 dark:text-white font-mono tabular-nums"><span id="imc-val">{{ needs.bmi }}</span> <span class="text-xs font-normal text-slate-500">kg/m²</span></span>
+              </div>
+              <span id="imc-badge" class="text-xs font-semibold px-2.5 py-1 rounded-md bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 {{ needs.bmiClassification.color }}">{{ needs.bmiClassification.label }}</span>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset data-pane="3" class="space-y-5">
+        <input type="hidden" name="activityLevel" value="{{ profile.activityLevel }}" />
+        <input type="hidden" name="mealsPerDay" value="{{ profile.mealsPerDay }}" />
+        <div>
+          <span class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">Volumen y nivel de actividad física</span>
+          <div class="space-y-2" data-optgroup="activityLevel">
+            {% for act in [
+              {'id':'sedentario','label':'Sedentario','desc':'Trabajo sentado, traslados en vehículo, poco o nulo ejercicio.'},
+              {'id':'ligero','label':'Ligero','desc':'Paseos diarios, caminar 30 min, tareas domésticas activas (1-2 días/sem).'},
+              {'id':'moderado','label':'Moderado (Recomendado)','desc':'Entrenamiento físico 3-5 días/sem o 45-60 min/día (ciclismo, gym, natación).'},
+              {'id':'intenso','label':'Intenso','desc':'Deporte exigente 6-7 días/sem o trabajos físicos pesados.'},
+              {'id':'atleta','label':'Atleta / Muy intenso','desc':'Doble sesión deportiva diaria o competición de alto rendimiento.'}] %}
+            <button type="button" data-opt="activityLevel" data-val="{{ act.id }}" data-sel="{{ profile.activityLevel == act.id ? 1 : 0 }}" class="w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between {{ profile.activityLevel == act.id ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-950 dark:text-emerald-100 ring-1 ring-emerald-500' : 'border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40' }}">
+              <div><span class="font-semibold text-xs block">{{ act.label }}</span><span class="text-[11px] text-slate-500 dark:text-slate-400">{{ act.desc }}</span></div>
+              <span class="onb-check {{ profile.activityLevel == act.id ? '' : 'hidden' }} shrink-0 ml-2"><i data-lucide="check" class="w-4 h-4 text-emerald-600 dark:text-emerald-400"></i></span>
+            </button>
+            {% endfor %}
+          </div>
+        </div>
+        <div>
+          <span class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Número de ingestas diarias recomendadas</span>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-2">La nutricionista clínica recomienda 5 o 6 ingestas para regular la insulina y el cortisol.</p>
+          <div class="grid grid-cols-3 gap-2" data-optgroup="mealsPerDay">
+            {% for m in [{'num':4,'label':'4 comidas','desc':'Desayuno, Comida, Merienda, Cena'},{'num':5,'label':'5 comidas (Estándar)','desc':'+ Tentempié a media mañana'},{'num':6,'label':'6 comidas (Óptimo)','desc':'+ Tentempié y Recena nocturna'}] %}
+            <button type="button" data-opt="mealsPerDay" data-val="{{ m.num }}" data-sel="{{ profile.mealsPerDay == m.num ? 1 : 0 }}" class="p-3 text-left rounded-xl border transition-all {{ profile.mealsPerDay == m.num ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 font-semibold ring-1 ring-emerald-500' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800' }}">
+              <span class="block text-xs font-bold">{{ m.label }}</span><span class="block text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{{ m.desc }}</span>
+            </button>
+            {% endfor %}
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset data-pane="4" class="space-y-5">
+        <input type="hidden" name="dietaryPreference" value="{{ profile.dietaryPreference }}" />
+        <input type="hidden" name="allergies" value="{{ profile.allergies|join(', ') }}" />
+        <div>
+          <span class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Estilo o preferencia alimentaria</span>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" data-optgroup="dietaryPreference">
+            {% for style in [{'id':'mediterranea','label':'Mediterránea'},{'id':'omnivoro','label':'Omnívoro clásico'},{'id':'pescetariano','label':'Pescetariano'},{'id':'vegetariano','label':'Vegetariano'}] %}
+            <button type="button" data-opt="dietaryPreference" data-val="{{ style.id }}" data-sel="{{ profile.dietaryPreference == style.id ? 1 : 0 }}" class="p-2.5 text-center text-xs font-medium rounded-lg border transition-all {{ profile.dietaryPreference == style.id ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-semibold' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800' }}">{{ style.label }}</button>
+            {% endfor %}
+          </div>
+        </div>
+        <div>
+          <span class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Alergias e intolerancias a excluir</span>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 mb-2">Las recetas del plan semanal se filtrarán automáticamente para no contener estos ingredientes.</p>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" data-optgroup="allergies">
+            {% for allergen in ['Gluten','Lácteos','Huevos','Pescado','Crustáceos','Moluscos','Frutos secos','Soja','Sésamo','Apio','Mostaza','Sulfitos'] %}
+            <button type="button" data-allergy="{{ allergen }}" data-sel="{{ allergen in profile.allergies ? 1 : 0 }}" class="flex items-center gap-2 p-2 rounded-lg text-xs font-medium border text-left transition-all {{ allergen in profile.allergies ? 'border-rose-400 bg-rose-50 dark:bg-rose-950/30 text-rose-800 dark:text-rose-200 font-semibold' : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800' }}">
+              <span class="onb-box w-4 h-4 rounded flex items-center justify-center shrink-0 border {{ allergen in profile.allergies ? 'bg-rose-500 border-rose-500 text-white' : 'border-slate-300 dark:border-slate-600' }}"><i data-lucide="check" class="w-3 h-3 onb-tick {{ allergen in profile.allergies ? '' : 'hidden' }}"></i></span>
+              <span class="truncate">{{ allergen }}</span>
+            </button>
+            {% endfor %}
+          </div>
+        </div>
+        <div>
+          <label for="onb-water" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Meta de hidratación diaria</label>
+          <div class="flex items-center gap-4">
+            <input id="onb-water" name="dailyWaterTargetLiters" type="range" min="1.5" max="4.0" step="0.1" value="{{ profile.dailyWaterTargetLiters }}" class="w-full accent-emerald-600" />
+            <span class="font-mono tabular-nums text-sm font-bold text-slate-900 dark:text-white shrink-0 min-w-[70px]"><span id="water-label">{{ profile.dailyWaterTargetLiters }}</span> L / día</span>
+          </div>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Pauta clínica: tomar agua principalmente fuera de las comidas (30-60 minutos antes o después).</p>
+        </div>
+      </fieldset>
+
+      <div class="p-4 bg-slate-900 text-white rounded-xl shadow-inner space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-1 text-xs border-b border-slate-800 pb-2">
+          <span class="text-emerald-400 font-semibold flex items-center gap-1.5"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Prescripción Nutricional Calculada</span>
+          <span class="text-slate-400 font-mono tabular-nums">TMB: <span id="calc-bmr">{{ needs.bmr }}</span> kcal · TDEE: <span id="calc-tdee">{{ needs.tdee }}</span> kcal</span>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+          <div class="bg-slate-800/80 p-2.5 rounded-lg">
+            <span class="block text-[11px] text-slate-400">Calorías Diarias</span>
+            <span class="text-lg font-bold text-emerald-400 font-mono tabular-nums" id="calc-kcal">{{ needs.targetCalories }}</span>
+            <span class="block text-[10px] text-slate-400" id="calc-sub">{% if needs.deficitOrSurplus > 0 %}+{{ needs.deficitOrSurplus }} superávit{% elseif needs.deficitOrSurplus < 0 %}{{ needs.deficitOrSurplus }} déficit{% else %}Mantenimiento{% endif %}</span>
+          </div>
+          <div class="bg-slate-800/80 p-2.5 rounded-lg">
+            <span class="block text-[11px] text-slate-400">Proteínas</span>
+            <span class="text-lg font-bold text-blue-400 font-mono tabular-nums"><span id="calc-p">{{ needs.macros.proteinGrams }}</span>g</span>
+            <span class="block text-[10px] text-slate-400" id="calc-psub">{{ needs.macros.proteinPct }}% ({{ needs.macros.proteinCalories }} kcal)</span>
+          </div>
+          <div class="bg-slate-800/80 p-2.5 rounded-lg">
+            <span class="block text-[11px] text-slate-400">Carbohidratos</span>
+            <span class="text-lg font-bold text-amber-400 font-mono tabular-nums"><span id="calc-c">{{ needs.macros.carbsGrams }}</span>g</span>
+            <span class="block text-[10px] text-slate-400" id="calc-csub">{{ needs.macros.carbsPct }}% ({{ needs.macros.carbsCalories }} kcal)</span>
+          </div>
+          <div class="bg-slate-800/80 p-2.5 rounded-lg">
+            <span class="block text-[11px] text-slate-400">Grasas Saludables</span>
+            <span class="text-lg font-bold text-purple-400 font-mono tabular-nums"><span id="calc-f">{{ needs.macros.fatsGrams }}</span>g</span>
+            <span class="block text-[10px] text-slate-400" id="calc-fsub">{{ needs.macros.fatsPct }}% ({{ needs.macros.fatsCalories }} kcal)</span>
+          </div>
+        </div>
+        <div id="calc-pace" class="text-xs text-slate-300 flex items-center justify-between pt-1 {{ profile.currentWeight != profile.targetWeight ? '' : 'hidden' }}">
+          <span>Ritmo previsto: <strong class="font-mono tabular-nums" id="calc-rate">{{ needs.weeklyExpectedChangeKg|abs }} kg/semana</strong></span>
+          <span>Meta estimada: <strong class="font-mono tabular-nums">~<span id="calc-weeks">{{ needs.estimatedWeeksToGoal }}</span> semanas</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="px-4 sm:px-6 py-4 bg-slate-50 dark:bg-slate-800/80 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+      <div>
+        <button type="button" id="onb-back" class="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 rounded-lg transition-colors invisible">← Anterior</button>
+      </div>
+      <div class="flex items-center gap-2">
+        <button type="button" id="onb-next" class="px-5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors shadow-xs">Siguiente paso →</button>
+        <button type="submit" id="onb-save" class="hidden px-6 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors shadow-sm items-center gap-2"><i data-lucide="check" class="w-4 h-4"></i> Guardar y planificar dieta</button>
+      </div>
+    </div>
+  </div>
+  </form>
+  <p id="onb-msg" class="text-xs text-red-600"></p>
+</div>
+{% endblock %}

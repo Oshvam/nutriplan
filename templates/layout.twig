@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>{% block title %}NutriPlan{% endblock %}</title>
+  <meta name="description" content="Planificación nutricional personalizada: cálculo calórico clínico, plan semanal, recetario y seguimiento de peso." />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="NutriPlan" />
+  <link rel="apple-touch-icon" href="/icons/icon-512.png" />
+  <meta name="theme-color" content="#059669" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <script>
+    try { if (localStorage.getItem('nutriplan_theme') === 'dark') document.documentElement.classList.add('dark'); } catch (e) {}
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    @custom-variant dark (&:where(.dark, .dark *));
+    @theme {
+      --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+      --font-display: "Outfit", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+      --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; }
+    h1, h2, h3 { font-family: "Outfit", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; }
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgb(148,163,184); border-radius: 8px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgb(100,116,139); }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body class="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors overflow-x-clip pb-[calc(3.5rem+env(safe-area-inset-bottom))] lg:pb-0">
+{% if chrome|default(false) %}
+<header class="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between gap-6 h-16">
+      <div class="flex items-center gap-3 shrink-0">
+        <a href="/?tab=plan" class="flex items-center gap-2 text-left focus:outline-none group">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shadow-sm shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+            <i data-lucide="apple" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <span class="font-display font-bold text-lg text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5">NutriPlan</span>
+            <span class="hidden sm:block text-[11px] text-slate-500 dark:text-slate-400 font-medium leading-none">Tu Dieta Personalizada</span>
+          </div>
+        </a>
+      </div>
+      <nav class="hidden lg:flex items-center gap-1 text-sm font-medium">
+        <a href="/?tab=plan" class="px-3.5 py-1.5 rounded-lg whitespace-nowrap transition-colors relative {{ tab == 'plan' ? 'text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/40' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70' }}">Plan Semanal</a>
+        <a href="/?tab=hoy" class="px-3.5 py-1.5 rounded-lg whitespace-nowrap transition-colors relative {{ tab == 'hoy' ? 'text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/40' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70' }}">¿Qué comer hoy?<span class="ml-1.5 inline-block text-[10px] text-amber-600 dark:text-amber-400 font-semibold uppercase">Nuevo</span></a>
+        <a href="/?tab=recetas" class="px-3.5 py-1.5 rounded-lg whitespace-nowrap transition-colors relative {{ tab == 'recetas' ? 'text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/40' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70' }}">Recetario</a>
+        <a href="/perfil" class="px-3.5 py-1.5 rounded-lg whitespace-nowrap transition-colors relative {{ tab == 'perfil' ? 'text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/40' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70' }}">Mi Perfil</a>
+        <a href="/?tab=compra" class="px-3.5 py-1.5 rounded-lg whitespace-nowrap transition-colors relative {{ tab == 'compra' ? 'text-emerald-700 dark:text-emerald-400 font-semibold bg-emerald-50 dark:bg-emerald-950/40' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-slate-800/70' }}">Lista de Compra</a>
+      </nav>
+      <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+        {% if goal_label %}
+        <div class="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs">
+          <span class="text-slate-400 text-[11px]">Objetivo:</span>
+          <span class="font-semibold text-slate-800 dark:text-slate-200">{{ goal_label }}</span>
+        </div>
+        {% endif %}
+        <button type="button" data-open-guidelines class="hidden sm:block p-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Guía clínica y pautas SEEDO de la nutricionista">
+          <i data-lucide="book-open" class="w-4 h-4"></i>
+        </button>
+        <button type="button" data-open-settings class="hidden sm:block p-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Ajustes: conectar con Mistral">
+          <i data-lucide="settings" class="w-4 h-4"></i>
+        </button>
+        <button type="button" data-theme-toggle class="p-2 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Cambiar tema">
+          <span data-theme-icon-moon><i data-lucide="moon" class="w-4 h-4"></i></span>
+          <span data-theme-icon-sun class="hidden"><i data-lucide="sun" class="w-4 h-4 text-amber-400"></i></span>
+        </button>
+        <a href="/perfil" title="Mi perfil y progreso" aria-label="Abrir mi perfil" class="w-9 h-9 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-sm transition-colors shrink-0">
+          <i data-lucide="user" class="w-4 h-4"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+</header>
+<main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+{% block body %}{% endblock %}
+</main>
+<footer class="mt-auto border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-6 text-xs text-slate-500 dark:text-slate-400">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+    <div class="flex items-center gap-2">
+      <span class="font-display font-semibold text-slate-800 dark:text-slate-200">NutriPlan</span>
+      <span>·</span>
+      <span>Planificación nutricional personalizada con IA</span>
+      <span>·</span>
+      <span class="text-[11px] text-slate-400">Pautas clínicas SEEDO &amp; Krause</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <button type="button" data-open-guidelines class="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Pautas Médicas</button>
+      <a href="/perfil" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Mi Perfil</a>
+    </div>
+  </div>
+</footer>
+<nav class="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 pb-[env(safe-area-inset-bottom)]" aria-label="Navegación principal">
+  <div class="grid grid-cols-4">
+    <a href="/?tab=plan" class="flex flex-col items-center justify-center gap-0.5 pt-2 pb-1.5 min-h-[54px] text-[10px] font-semibold transition-colors {{ tab == 'plan' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400' }}" {{ tab == 'plan' ? 'aria-current="page"' }}>
+      <i data-lucide="calendar-days" class="w-5 h-5" stroke-width="{{ tab == 'plan' ? '2.4' : '1.8' }}"></i>
+      <span>Plan</span>
+      <span class="block h-0.5 w-5 rounded-full {{ tab == 'plan' ? 'bg-emerald-500' : 'bg-transparent' }}"></span>
+    </a>
+    <a href="/?tab=hoy" class="flex flex-col items-center justify-center gap-0.5 pt-2 pb-1.5 min-h-[54px] text-[10px] font-semibold transition-colors {{ tab == 'hoy' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400' }}" {{ tab == 'hoy' ? 'aria-current="page"' }}>
+      <i data-lucide="utensils-crossed" class="w-5 h-5" stroke-width="{{ tab == 'hoy' ? '2.4' : '1.8' }}"></i>
+      <span>Hoy</span>
+      <span class="block h-0.5 w-5 rounded-full {{ tab == 'hoy' ? 'bg-emerald-500' : 'bg-transparent' }}"></span>
+    </a>
+    <a href="/?tab=recetas" class="flex flex-col items-center justify-center gap-0.5 pt-2 pb-1.5 min-h-[54px] text-[10px] font-semibold transition-colors {{ tab == 'recetas' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400' }}" {{ tab == 'recetas' ? 'aria-current="page"' }}>
+      <i data-lucide="book-open" class="w-5 h-5" stroke-width="{{ tab == 'recetas' ? '2.4' : '1.8' }}"></i>
+      <span>Recetas</span>
+      <span class="block h-0.5 w-5 rounded-full {{ tab == 'recetas' ? 'bg-emerald-500' : 'bg-transparent' }}"></span>
+    </a>
+    <a href="/?tab=compra" class="flex flex-col items-center justify-center gap-0.5 pt-2 pb-1.5 min-h-[54px] text-[10px] font-semibold transition-colors {{ tab == 'compra' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400' }}" {{ tab == 'compra' ? 'aria-current="page"' }}>
+      <i data-lucide="shopping-cart" class="w-5 h-5" stroke-width="{{ tab == 'compra' ? '2.4' : '1.8' }}"></i>
+      <span>Compra</span>
+      <span class="block h-0.5 w-5 rounded-full {{ tab == 'compra' ? 'bg-emerald-500' : 'bg-transparent' }}"></span>
+    </a>
+  </div>
+</nav>
+<div id="modal-guidelines" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-3xl shadow-2xl overflow-y-auto transition-all my-4 sm:my-8 max-h-[calc(100dvh-2rem)]">
+    <div class="p-6 sm:p-8" data-modal-body>
+      <div class="flex items-start justify-between mb-6">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-display font-bold text-slate-900 dark:text-white flex items-center gap-2"><i data-lucide="book-open" class="w-6 h-6"></i> Guía Clínica de la Nutricionista</h2>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Pautas clínicas SEEDO &amp; criterios de Krause aplicados en tu plan</p>
+        </div>
+        <button type="button" data-modal-close class="p-2 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" aria-label="Cerrar">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="space-y-4 text-sm text-slate-700 dark:text-slate-300">
+        <section class="rounded-xl border border-slate-200 dark:border-slate-800 p-4 bg-slate-50 dark:bg-slate-800/60">
+          <h3 class="font-bold text-slate-900 dark:text-white mb-1"><i data-lucide="utensils-crossed" class="w-4 h-4"></i> La Regla de las 5–6 Comidas</h3>
+          <p>Realiza <strong>5–6 comidas al día</strong> en horarios regulares, sin saltarte ninguna. Esto mantiene estable tu glucosa, evita atracones y distribuye la energía de forma óptima a lo largo del día.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 dark:border-slate-800 p-4 bg-slate-50 dark:bg-slate-800/60">
+          <h3 class="font-bold text-slate-900 dark:text-white mb-1"><i data-lucide="users" class="w-4 h-4"></i> Gestión Social: "Si se suma, se debe restar"</h3>
+          <p>¿Tienes una comida fuera de casa, un capricho o una celebración? Disfrútala sin culpa, pero compensa: todo extra (dulces, alcohol, salsas, frituras) debe restarse de la siguiente ingesta. Puntos críticos a vigilar:</p>
+          <ul class="list-disc list-inside mt-2 space-y-1 text-slate-600 dark:text-slate-400">
+            <li>Picoteo entre horas sin registrar</li>
+            <li>Bebidas azucaradas y alcohol ("calorías invisibles")</li>
+            <li>El "solo un poco" diario que suma 200–300 kcal</li>
+            <li>Cenar tarde y pesado de forma habitual</li>
+          </ul>
+        </section>
+        <section class="rounded-xl border border-slate-200 dark:border-slate-800 p-4 bg-slate-50 dark:bg-slate-800/60">
+          <h3 class="font-bold text-slate-900 dark:text-white mb-2"><i data-lucide="clipboard-list" class="w-4 h-4"></i> Criterios SEEDO (Sociedad Española para el Estudio de la Obesidad)</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs sm:text-sm">
+              <thead>
+                <tr class="text-left text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
+                  <th class="py-1.5 pr-3 font-semibold">Clasificación</th>
+                  <th class="py-1.5 pr-3 font-semibold">IMC (kg/m²)</th>
+                  <th class="py-1.5 font-semibold">Actuación</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                <tr><td class="py-1.5 pr-3">Peso insuficiente</td><td class="py-1.5 pr-3 font-mono">&lt;18,5</td><td class="py-1.5">Evaluación clínica</td></tr>
+                <tr><td class="py-1.5 pr-3">Normopeso</td><td class="py-1.5 pr-3 font-mono">18,5–24,9</td><td class="py-1.5">Mantener hábitos</td></tr>
+                <tr><td class="py-1.5 pr-3">Sobrepeso grado I</td><td class="py-1.5 pr-3 font-mono">25–26,9</td><td class="py-1.5">Consejo dietético</td></tr>
+                <tr><td class="py-1.5 pr-3">Sobrepeso grado II</td><td class="py-1.5 pr-3 font-mono">27–29,9</td><td class="py-1.5">Intervención estructurada</td></tr>
+                <tr><td class="py-1.5 pr-3">Obesidad tipo I</td><td class="py-1.5 pr-3 font-mono">30–34,9</td><td class="py-1.5">Tratamiento médico</td></tr>
+                <tr><td class="py-1.5 pr-3">Obesidad tipo II</td><td class="py-1.5 pr-3 font-mono">35–39,9</td><td class="py-1.5">Tratamiento intensivo</td></tr>
+                <tr><td class="py-1.5 pr-3">Obesidad mórbida</td><td class="py-1.5 pr-3 font-mono">≥40</td><td class="py-1.5">Unidad especializada</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="mt-2 text-slate-600 dark:text-slate-400">Objetivo realista: perder el <strong>8–10% del peso en 6 meses</strong> (≈0,5–1 kg/semana). Más rápido aumenta el riesgo de efecto rebote y pérdida de masa muscular.</p>
+        </section>
+        <section class="rounded-xl border border-slate-200 dark:border-slate-800 p-4 bg-slate-50 dark:bg-slate-800/60">
+          <h3 class="font-bold text-slate-900 dark:text-white mb-1"><i data-lucide="droplets" class="w-4 h-4"></i> Hidratación + Ejercicio</h3>
+          <p><strong>Agua fuera de las comidas:</strong> bebe a lo largo del día, no grandes cantidades durante las ingestas (diluye jugos gástricos y retrasa la saciedad real). <strong>Ejercicio:</strong> combina 45–60 min de actividad moderada casi a diario con 2–3 sesiones semanales de fuerza para preservar el músculo mientras pierdes grasa.</p>
+        </section>
+      </div>
+      <div class="mt-6 flex justify-end">
+        <button type="button" data-modal-close class="px-5 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition-colors">Entendido</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="modal-settings" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-y-auto transition-all my-4 sm:my-8 max-h-[calc(100dvh-2rem)]">
+    <div class="p-6 sm:p-8">
+      <div class="flex items-start justify-between mb-6">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-display font-bold text-slate-900 dark:text-white flex items-center gap-2"><i data-lucide="plug" class="w-6 h-6"></i> Ajustes</h2>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Modelo de IA para recomendaciones (la clave API es global del servidor)</p>
+        </div>
+        <button type="button" data-modal-close class="p-2 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" aria-label="Cerrar">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="rounded-xl border p-4 mb-4 text-sm {{ mistral.configured ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40' : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60' }}">
+        {% if mistral.configured %}
+        <p class="font-semibold text-emerald-700 dark:text-emerald-400"><i data-lucide="check" class="w-4 h-4"></i> Mistral conectado ({{ mistral.masked }})</p>
+        <p class="text-slate-600 dark:text-slate-400 mt-1">Las recomendaciones "¿Qué comer hoy?" y los planes con IA usan la clave global del servidor.</p>
+        {% else %}
+        <p class="font-semibold text-slate-800 dark:text-slate-200">Sin conectar</p>
+        <p class="text-slate-600 dark:text-slate-400 mt-1">La clave API la gestiona el servidor (.env MISTRAL_API_KEY). Sin clave, la app usa recetas de respaldo algorítmicas.</p>
+        {% endif %}
+      </div>
+      <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Modelo</label>
+      <select id="ms-model" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent p-2.5 text-sm mb-3">
+        {% for m in mistral.models %}<option value="{{ m }}" {{ mistral.model == m ? 'selected' : '' }}>{{ m }}</option>{% endfor %}
+      </select>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-1.5 flex items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> La clave API es global del servidor, el usuario no tiene que introducir nada.</p>
+      <p id="ms-msg" class="text-sm mt-3 min-h-[1.25rem]"></p>
+      <div class="mt-4 flex flex-wrap items-center gap-2">
+        <button type="button" data-ms="save" class="px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition-colors">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% else %}
+{% block content_plain %}{% endblock %}
+{% endif %}
+<div id="install-banner" class="hidden fixed inset-x-3 bottom-20 lg:bottom-6 z-40 max-w-md mx-auto lg:mx-0 lg:left-6 lg:right-auto rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-4">
+  <div class="flex items-center gap-3">
+    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shrink-0"><i data-lucide="apple" class="w-5 h-5"></i></div>
+    <div class="flex-1 min-w-0">
+      <p class="font-bold text-sm">Instala NutriPlan</p>
+      <p id="install-sub" class="text-xs text-slate-500 dark:text-slate-400">Acceso directo en tu equipo, funciona sin conexión.</p>
+    </div>
+    <button id="install-go" class="px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold shrink-0 transition-colors">Instalar</button>
+    <button id="install-no" class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 shrink-0" aria-label="Ahora no"><i data-lucide="x" class="w-4 h-4"></i></button>
+  </div>
+</div>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script>try { lucide.createIcons(); } catch (e) {}</script>
+<script src="/app.js" defer></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

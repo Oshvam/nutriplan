@@ -1,0 +1,219 @@
+{% extends "layout.twig" %}
+{% block title %}Plan semanal · NutriPlan{% endblock %}
+{% block body %}
+<div class="space-y-4 sm:space-y-6">
+  <div class="bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 rounded-2xl p-4 sm:p-6 text-white shadow-lg relative overflow-hidden">
+    <div class="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-white/5 pointer-events-none blur-2xl"></div>
+    <div class="absolute bottom-0 right-1/4 -mb-16 w-48 h-48 rounded-full bg-teal-400/10 pointer-events-none blur-xl"></div>
+    <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6">
+      <div class="space-y-2 max-w-2xl">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-xs text-xs font-medium text-emerald-100">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-300"></i>
+          <span>{{ greeting.saludo }}</span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold font-display tracking-tight text-white">Planificación Semanal de Dietas</h1>
+        <p class="text-emerald-100/90 text-xs sm:text-sm leading-relaxed">{{ greeting.consejoNutricional }}</p>
+      </div>
+      <div class="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/15 w-full lg:w-auto lg:min-w-[260px] space-y-2">
+        <div class="flex items-center justify-between text-xs text-emerald-200">
+          <span class="font-semibold uppercase tracking-wider text-[10px]">Próxima Ingesta</span>
+          <span class="font-mono tabular-nums">{{ greeting.horarioRecomendado }}</span>
+        </div>
+        <div class="text-sm font-bold text-white flex items-center gap-2">
+          <i data-lucide="clock" class="w-4 h-4 text-emerald-300"></i>
+          <span>{{ greeting.proximaComidaNombre }}</span>
+        </div>
+        <div class="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-emerald-100 font-mono tabular-nums">
+          <span>Meta diaria: <strong>{{ needs.targetCalories }} kcal</strong></span>
+          <span class="text-emerald-300">SEEDO {{ needs.bmiClassification.label|split(' ')|first }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="plan-days" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
+      {% for d in plan %}
+        {% set done = d.meals|filter(m => m.completed)|length %}
+        {% set all = done == (d.meals|length) and (d.meals|length > 0) %}
+        {% set sel = loop.index0 == di %}
+        <a href="/?tab=plan&dia={{ loop.index0 }}&vista={{ vista }}" class="px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 border {{ sel ? 'border-emerald-600 bg-emerald-600 text-white shadow-xs' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 hover:border-slate-300' }}">
+          <span>{{ d.dayName }}</span>
+          {% if all %}
+            <i data-lucide="circle-check-big" class="w-3.5 h-3.5 {{ sel ? 'text-white' : 'text-emerald-500' }}"></i>
+          {% else %}
+            <span class="text-[10px] font-mono tabular-nums px-1.5 py-0.2 rounded-full {{ sel ? 'bg-emerald-800 text-emerald-100' : 'bg-slate-200 dark:bg-slate-700 text-slate-500' }}">{{ done }}/{{ d.meals|length }}</span>
+          {% endif %}
+        </a>
+      {% endfor %}
+    </div>
+    <div class="flex flex-wrap items-center gap-2 self-end md:self-auto shrink-0">
+      <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700 text-xs">
+        <a href="/?tab=plan&dia={{ di }}&vista=dia" class="px-2.5 py-1 rounded-md font-medium transition-colors {{ vista == 'dia' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-semibold' : 'text-slate-600 dark:text-slate-400' }}">Vista Día</a>
+        <a href="/?tab=plan&dia={{ di }}&vista=matriz" class="px-2.5 py-1 rounded-md font-medium transition-colors {{ vista == 'matriz' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-semibold' : 'text-slate-600 dark:text-slate-400' }}">Matriz 7 Días</a>
+      </div>
+      <button data-act="regen" title="Reorganizar menú con otras recetas aptas" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+        <span class="hidden sm:inline">Reorganizar</span>
+      </button>
+    </div>
+  </div>
+
+  {% if vista == 'matriz' %}
+    <div id="plan-matrix" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs overflow-hidden">
+      <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+        <div>
+          <h3 class="text-base font-bold font-display text-slate-900 dark:text-white">Cuadrícula Semanal Completa (7 Días)</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Formato clínico de la nutricionista con las ingestas distribuidas de Lunes a Domingo.</p>
+          <p class="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1 lg:hidden">Desliza la tabla → para recorrer los 7 días</p>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs text-left border-collapse min-w-[900px]">
+          <thead>
+            <tr class="bg-emerald-600 text-white font-semibold uppercase tracking-wider text-[11px]">
+              <th class="p-3 w-28 border-r border-emerald-500">Ingesta</th>
+              {% for d in plan %}<th class="p-3 border-r border-emerald-500 last:border-r-0 text-center">{{ d.dayName }}</th>{% endfor %}
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            {% for mt in ['desayuno', 'tentempie', 'comida', 'merienda', 'cena', 'recena'] %}
+              <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                <td class="p-3 font-bold bg-slate-50 dark:bg-slate-800/50 text-slate-800 dark:text-slate-200 border-r border-slate-100 dark:border-slate-800">{{ {'desayuno': 'Desayuno', 'tentempie': 'Tentempié', 'comida': 'Comida', 'merienda': 'Merienda', 'cena': 'Cena', 'recena': 'Recena'}[mt] }}</td>
+                {% for d in 0..6 %}
+                  {% set cell = null %}
+                  {% for m in matrix[d].meals %}{% if m.mealType == mt %}{% set cell = m %}{% endif %}{% endfor %}
+                  <td class="p-2.5 border-r border-slate-100 dark:border-slate-800 align-top">
+                    {% if cell and cell.recipe %}
+                      <a href="/receta?id={{ cell.recipe.id }}&dia={{ d }}&slot={{ mt }}&back={{ ('/?tab=plan&dia=' ~ di ~ '&vista=matriz')|url_encode }}" class="w-full text-left p-2 rounded-lg bg-slate-50 dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors border border-transparent hover:border-emerald-300 dark:hover:border-emerald-800 group block">
+                        <span class="font-semibold text-slate-900 dark:text-white line-clamp-2 block group-hover:text-emerald-700 dark:group-hover:text-emerald-300">{{ cell.recipe.title }}</span>
+                        <span class="block text-[10px] text-slate-400 font-mono tabular-nums mt-1">{{ cell.recipe.calories }} kcal · {{ cell.recipe.prepTimeMinutes }}m</span>
+                      </a>
+                    {% else %}<span class="text-slate-400">-</span>{% endif %}
+                  </td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% else %}
+    {% set ok = (totals.cal - needs.targetCalories)|abs < 150 %}
+    <div id="plan-day" class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+      <div class="lg:col-span-2 space-y-3">
+        {% for m in meals %}
+          <div class="bg-white dark:bg-slate-900 border rounded-2xl p-4 sm:p-5 shadow-xs transition-all {{ m.completed ? 'border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/20 dark:bg-emerald-950/10' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700' }}">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div class="flex items-start gap-3.5 min-w-0">
+                <button data-act="toggle" data-dia="{{ di }}" data-slot="{{ m.mealType }}" title="{{ m.completed ? 'Marcar como pendiente' : 'Marcar como consumida' }}" class="mt-0.5 text-slate-400 hover:text-emerald-600 transition-colors shrink-0">
+                  {% if m.completed %}<i data-lucide="circle-check-big" class="w-5 h-5 text-emerald-600 dark:text-emerald-400"></i>
+                  {% else %}<i data-lucide="circle" class="w-5 h-5 text-slate-300 dark:text-slate-600 hover:text-emerald-500"></i>{% endif %}
+                </button>
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+                    <span class="font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">{{ m.label }}</span>
+                    <span aria-hidden="true">·</span>
+                    <span class="font-mono tabular-nums flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3 text-slate-400"></i>{{ m.timeSlot }}</span>
+                    <span aria-hidden="true">·</span>
+                    <span class="font-mono tabular-nums">{{ m.recipe ? m.recipe.prepTimeMinutes ~ ' min' : '—' }}</span>
+                  </div>
+                  {% if m.recipe %}
+                    <h3 class="text-base font-bold font-display {{ m.completed ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-900 dark:text-white' }}">{{ m.recipe.title }}</h3>
+                    {% if m.recipe.subtitle %}<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">{{ m.recipe.subtitle }}</p>{% endif %}
+                    <div class="flex flex-wrap items-center gap-3 mt-3 text-xs">
+                      <div class="flex items-center gap-1 text-slate-700 dark:text-slate-300 font-medium">
+                        <i data-lucide="flame" class="w-3.5 h-3.5 text-amber-500"></i>
+                        <span class="font-mono tabular-nums font-bold">{{ m.recipe.calories }}</span>
+                        <span class="text-[11px] text-slate-400">kcal</span>
+                      </div>
+                      <div class="flex items-center gap-2 text-[11px] text-slate-500 font-mono tabular-nums">
+                        <span>P: {{ m.recipe.protein }}g</span><span>·</span><span>HC: {{ m.recipe.carbs }}g</span><span>·</span><span>G: {{ m.recipe.fat }}g</span>
+                      </div>
+                      {% if m.recipe.allergens|length %}
+                        <div class="text-[11px] text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-900/50">{{ m.recipe.allergens|join(', ') }}</div>
+                      {% endif %}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
+                <a href="/ia?dia={{ di }}&slot={{ m.mealType }}" title="Crear un plato nuevo con IA para este momento" class="p-2 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800 transition-colors flex items-center gap-1 text-xs">
+                  <i data-lucide="sparkles" class="w-3.5 h-3.5"></i><span class="hidden sm:inline text-[11px] font-semibold">IA</span>
+                </a>
+                <button data-act="swap" data-dia="{{ di }}" data-slot="{{ m.mealType }}" title="Cambiar este plato por otra opción del recetario" class="p-2 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                  <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                </button>
+                {% if m.recipe %}
+                  <a href="/receta?id={{ m.recipe.id }}&dia={{ di }}&slot={{ m.mealType }}&back={{ ('/?tab=plan&dia=' ~ di)|url_encode }}" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-colors flex items-center gap-1">
+                    <i data-lucide="eye" class="w-3.5 h-3.5"></i><span>Ver receta</span>
+                  </a>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+      <div class="space-y-4 sm:space-y-6">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
+          <div class="border-b border-slate-100 dark:border-slate-800 pb-3">
+            <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Balance Nutricional del Día</span>
+            <h3 class="text-lg font-bold font-display text-slate-900 dark:text-white">{{ plan[di].dayName }}</h3>
+          </div>
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="text-slate-600 dark:text-slate-400 font-medium">Calorías Totales</span>
+              <span class="font-mono tabular-nums"><strong class="text-emerald-600 dark:text-emerald-400 text-sm">{{ totals.cal }}</strong> / {{ needs.targetCalories }} kcal</span>
+            </div>
+            <div class="w-full bg-slate-100 dark:bg-slate-800 h-2.5 rounded-full overflow-hidden">
+              <div class="h-full rounded-full transition-all {{ ok ? 'bg-emerald-500' : 'bg-amber-500' }}" style="width:{{ min(100, (totals.cal / needs.targetCalories * 100))|round }}%"></div>
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-2 pt-2 text-center text-xs">
+            <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+              <span class="block text-[10px] text-slate-400 font-medium">Proteínas</span>
+              <span class="font-mono tabular-nums font-bold text-sm text-blue-600 dark:text-blue-400">{{ totals.p }}g</span>
+              <span class="block text-[10px] text-slate-400 mt-0.5">Meta: {{ needs.macros.proteinGrams }}g</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+              <span class="block text-[10px] text-slate-400 font-medium">Carbohidratos</span>
+              <span class="font-mono tabular-nums font-bold text-sm text-amber-600 dark:text-amber-400">{{ totals.c }}g</span>
+              <span class="block text-[10px] text-slate-400 mt-0.5">Meta: {{ needs.macros.carbsGrams }}g</span>
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+              <span class="block text-[10px] text-slate-400 font-medium">Grasas</span>
+              <span class="font-mono tabular-nums font-bold text-sm text-purple-600 dark:text-purple-400">{{ totals.f }}g</span>
+              <span class="block text-[10px] text-slate-400 mt-0.5">Meta: {{ needs.macros.fatsGrams }}g</span>
+            </div>
+          </div>
+          <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
+            <span>Objetivo de agua hoy:</span>
+            <strong class="font-mono tabular-nums text-slate-900 dark:text-white">{{ profile.dailyWaterTargetLiters|default(2) }} L (fuera de comidas)</strong>
+          </div>
+        </div>
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-3">
+          <div class="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+            <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i>
+            <span>Alérgenos de este día</span>
+          </div>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400">Control de grupos alimentarios según la pauta clínica:</p>
+          {% if allergens|length %}
+            <div class="flex flex-wrap gap-1.5">
+              {% for alg in allergens %}<span class="text-xs font-medium px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 text-amber-800 dark:text-amber-300">{{ alg }}</span>{% endfor %}
+            </div>
+          {% else %}
+            <span class="text-xs text-emerald-600 font-medium">Día libre de los alérgenos principales.</span>
+          {% endif %}
+        </div>
+        <a href="/?tab=compra&dia={{ di }}" class="w-full p-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-800 dark:hover:bg-slate-700 text-left transition-colors flex items-center justify-between group shadow-xs">
+          <div>
+            <span class="text-xs text-slate-400 block font-medium">¿Listo para cocinar?</span>
+            <span class="text-sm font-bold font-display group-hover:text-emerald-400 transition-colors">Ver Lista de la Compra Semanal</span>
+          </div>
+          <i data-lucide="chevron-right" class="w-5 h-5 text-slate-400 group-hover:translate-x-1 transition-transform"></i>
+        </a>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

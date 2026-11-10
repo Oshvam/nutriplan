@@ -1,0 +1,35 @@
+{% extends "layout.twig" %}
+{% block title %}Panel · NutriPlan{% endblock %}
+{% block body %}
+<header class="bg-white shadow-sm">
+  <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+    <span class="font-bold text-emerald-700 flex items-center gap-1.5"><i data-lucide="apple" class="h-4 w-4"></i> NutriPlan</span>
+    <span class="text-sm text-slate-500">{{ user.name|default(user.email) }}</span>
+    <button id="logout" class="text-sm text-slate-500 underline">Salir</button>
+  </div>
+</header>
+<main class="max-w-3xl mx-auto px-4 py-6 space-y-4">
+  <section class="bg-white rounded-2xl shadow p-5">
+    <h1 class="text-xl font-bold">{{ greeting.saludo }}</h1>
+    <p class="text-sm text-slate-500 mt-1">{{ greeting.consejoNutricional }}</p>
+  </section>
+  {% if needs %}
+  <section class="bg-white rounded-2xl shadow p-5">
+    <h2 class="font-semibold mb-2">Tu objetivo diario: {{ needs.targetCalories }} kcal</h2>
+    <p class="text-sm text-slate-500">IMC {{ needs.bmi }} · {{ needs.bmiClassification.label }}</p>
+    <p class="text-sm text-slate-500">Proteínas {{ needs.macros.proteinGrams }}g · Carbohidratos {{ needs.macros.carbsGrams }}g · Grasas {{ needs.macros.fatsGrams }}g</p>
+  </section>
+  {% else %}
+  <section class="bg-white rounded-2xl shadow p-5">
+    <h2 class="font-semibold mb-1">Completa tu perfil</h2>
+    <p class="text-sm text-slate-500">El cuestionario inicial (onboarding) llega en el siguiente paso de la migración.</p>
+  </section>
+  {% endif %}
+</main>
+<script>
+  document.getElementById('logout').addEventListener('click', async () => {
+    await fetch('/api/auth/logout', {method: 'POST'});
+    location.href = '/';
+  });
+</script>
+{% endblock %}

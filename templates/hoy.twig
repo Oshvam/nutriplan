@@ -1,0 +1,53 @@
+{% extends "layout.twig" %}
+{% block title %}¿Qué comer hoy? · NutriPlan{% endblock %}
+{% block body %}
+<main class="max-w-5xl mx-auto px-4 py-4 space-y-4">
+  <section class="rounded-2xl p-5 text-white bg-gradient-to-r from-violet-600 to-fuchsia-500 shadow">
+    <h1 class="text-xl font-bold flex items-center gap-2"><i data-lucide="utensils-crossed" class="h-5 w-5"></i> ¿Qué comer hoy?</h1>
+    <p class="text-sm text-violet-100">Recomendaciones del catálogo según tu objetivo ({{ profile.goal }}) o genera una receta con IA.</p>
+    <a href="/ia" class="inline-block mt-3 px-4 py-2 rounded-full bg-white text-violet-700 text-sm font-bold inline-flex items-center gap-1.5"><i data-lucide="sparkles" class="h-4 w-4"></i> Generar con IA</a>
+  </section>
+
+  <form method="get" action="/" class="rounded-2xl bg-white dark:bg-slate-900 shadow-sm p-4 space-y-3">
+    <input type="hidden" name="tab" value="hoy" />
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+      <label class="block">Momento
+        <select name="meal" class="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent p-2">
+          {% for v in ['desayuno','comida','merienda','cena'] %}
+            <option value="{{ v }}" {{ mealType == v ? 'selected' : '' }}>{{ v|capitalize }} (~{{ meal_target(needs, v) }} kcal)</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="block">Tiempo máx. (min)
+        <input type="number" name="tiempo" min="5" max="120" value="{{ maxTime ?? '' }}" placeholder="Sin límite" class="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent p-2" />
+      </label>
+      <label class="block">Ingrediente
+        <input type="text" name="ing" value="{{ ingredient ?? '' }}" placeholder="pollo, huevo…" class="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent p-2" />
+      </label>
+      <label class="block">Estilo
+        <input type="text" name="estilo" value="{{ style ?? '' }}" placeholder="casero, ligero…" class="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent p-2" />
+      </label>
+    </div>
+    <button class="px-4 py-2 rounded-full bg-emerald-600 text-white text-sm font-bold">Buscar recomendaciones</button>
+  </form>
+
+  {% if recs|length %}
+    <h2 class="font-bold">Top {{ recs|length }} para {{ mealType }} (~{{ target }} kcal)</h2>
+    {% for it in recs %}
+      {% set r = it.recipe %}
+      <article class="rounded-2xl bg-white dark:bg-slate-900 shadow-sm p-4">
+        <h3 class="font-bold">{{ r.imageEmoji }} {{ r.title }} <span class="text-xs font-normal text-slate-500">({{ it.score }} pts)</span></h3>
+        <p class="text-sm text-slate-500">{{ r.subtitle }}</p>
+        <p class="text-sm mt-1 flex items-center gap-1">{{ r.calories }} kcal · P{{ r.protein }} C{{ r.carbs }} G{{ r.fat }} · <i data-lucide="clock" class="h-3.5 w-3.5"></i> {{ r.prepTimeMinutes }} min</p>
+        <p class="text-xs text-emerald-700 dark:text-emerald-300 mt-1 flex items-start gap-1"><i data-lucide="lightbulb" class="h-3.5 w-3.5 mt-0.5 shrink-0"></i> <span>Por qué te encaja: pensada para {{ mealType }} con ~{{ target }} kcal, compatible con tu objetivo y tus alergias.</span></p>
+        <div class="flex flex-wrap gap-2 mt-2 text-xs font-medium">
+          <a href="/receta?id={{ r.id }}&back={{ ('/?tab=hoy&meal=' ~ mealType)|url_encode }}" class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 inline-flex items-center gap-1"><i data-lucide="eye" class="h-3.5 w-3.5"></i> Ver receta</a>
+          <button data-act="apply-hoy" data-recipe="{{ r|json_encode|e('html_attr') }}" data-slot="{{ mealType }}" class="px-2.5 py-1 rounded-full bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200 inline-flex items-center gap-1"><i data-lucide="refresh-cw" class="h-3.5 w-3.5"></i> Sustituir en mi menú de hoy</button>
+        </div>
+      </article>
+    {% endfor %}
+  {% else %}
+    <p class="text-sm text-slate-500 rounded-2xl bg-white dark:bg-slate-900 shadow-sm p-4">Sin resultados con esos criterios. Prueba con la IA o ajusta los filtros.</p>
+  {% endif %}
+</main>
+{% endblock %}

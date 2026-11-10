@@ -1,0 +1,56 @@
+{% extends "layout.twig" %}
+{% block title %}Recetas · NutriPlan{% endblock %}
+{% block body %}
+<main class="max-w-5xl mx-auto px-4 py-4 space-y-4">
+  <h1 class="text-xl font-bold flex items-center gap-2"><i data-lucide="book-open" class="h-5 w-5"></i> Recetario <span class="text-sm font-normal text-slate-500">({{ total }} recetas)</span></h1>
+  <form method="get" action="/" class="rounded-2xl bg-white dark:bg-slate-900 shadow-sm p-4 space-y-3 text-sm">
+    <input type="hidden" name="tab" value="recetas" />
+    <input type="search" name="q" value="{{ fq.q }}" placeholder="Buscar por título, ingrediente o etiqueta…" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent p-2" />
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+      <label>Tiempo
+        <select name="tiempo" class="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent p-2">
+          <option value="">Todos</option>
+          {% for v in ['express','rapido','elaborado'] %}<option value="{{ v }}" {{ fq.tiempo == v ? 'selected' : '' }}>{{ v|capitalize }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Energía
+        <select name="kcal" class="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent p-2">
+          <option value="">Todas</option>
+          {% for v in ['baja','moderada','alta'] %}<option value="{{ v }}" {{ fq.kcal == v ? 'selected' : '' }}>{{ v|capitalize }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Momento
+        <select name="momento" class="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent p-2">
+          <option value="">Todos</option>
+          {% for v in ['desayuno','tentempie','comida','merienda','cena','recena'] %}<option value="{{ v }}" {{ fq.momento == v ? 'selected' : '' }}>{{ v|capitalize }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>Etiqueta
+        <select name="tag" class="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent p-2">
+          <option value="">Todas</option>
+          {% for t in tags %}<option value="{{ t }}" {{ fq.tag == t ? 'selected' : '' }}>{{ t }}</option>{% endfor %}
+        </select>
+      </label>
+    </div>
+    <div class="flex gap-2">
+      <button class="px-4 py-2 rounded-full bg-emerald-600 text-white font-bold">Filtrar</button>
+      <a href="/?tab=recetas" class="px-4 py-2 rounded-full bg-slate-100 dark:bg-slate-800">Limpiar</a>
+    </div>
+  </form>
+
+  <div class="grid md:grid-cols-2 gap-3">
+    {% for r in recipes %}
+      <a href="/receta?id={{ r.id }}&back={{ ('/?tab=recetas')|url_encode }}" class="rounded-2xl bg-white dark:bg-slate-900 shadow-sm p-4 hover:shadow">
+        <h3 class="font-bold leading-snug">{{ r.imageEmoji }} {{ r.title }}</h3>
+        <p class="text-sm text-slate-500">{{ r.subtitle }}</p>
+        <p class="text-xs text-slate-500 mt-1 flex items-center gap-1">{{ r.calories }} kcal · P{{ r.protein }} C{{ r.carbs }} G{{ r.fat }} · <i data-lucide="clock" class="h-3.5 w-3.5"></i> {{ r.prepTimeMinutes }} min · {{ (r.mealTypes ?? [])|join(', ') }}</p>
+      </a>
+    {% else %}
+      <p class="text-sm text-slate-500">Sin resultados.</p>
+    {% endfor %}
+  </div>
+  {% if total > n %}
+    <a href="/?tab=recetas&q={{ fq.q|url_encode }}&tiempo={{ fq.tiempo }}&kcal={{ fq.kcal }}&momento={{ fq.momento }}&tag={{ fq.tag|url_encode }}&n={{ n + 60 }}" class="block text-center rounded-2xl bg-slate-800 text-white font-medium px-4 py-3">Ver 60 más ({{ n }} de {{ total }})</a>
+  {% endif %}
+</main>
+{% endblock %}

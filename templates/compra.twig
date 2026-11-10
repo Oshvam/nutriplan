@@ -1,0 +1,41 @@
+{% extends "layout.twig" %}
+{% block title %}Lista de la compra · NutriPlan{% endblock %}
+{% block body %}
+<main class="max-w-5xl mx-auto px-4 py-4 space-y-4">
+  <h1 class="text-xl font-bold flex items-center gap-2"><i data-lucide="shopping-cart" class="h-5 w-5"></i> Lista de la compra</h1>
+  <div class="flex gap-2 overflow-x-auto pb-1">
+    {% for d in plan %}
+      <a href="/?tab=compra&dia={{ loop.index0 }}" class="shrink-0 px-3 py-1.5 rounded-xl text-sm font-medium {{ loop.index0 == di ? 'bg-emerald-600 text-white' : 'bg-white dark:bg-slate-900 shadow-sm' }}">{{ d.dayName|slice(0,3) }}</a>
+    {% endfor %}
+  </div>
+
+  <section class="rounded-2xl bg-white dark:bg-slate-900 shadow-sm p-4" id="shop" data-total="{{ shop.total }}">
+    <div class="flex items-center gap-2 text-sm font-medium">
+      <span id="shop-count">0/{{ shop.total }} comprados</span>
+      <div class="flex gap-1 ml-2">
+        <button data-filter="all" class="px-2.5 py-1 rounded-full bg-slate-800 text-white text-xs">Todos</button>
+        <button data-filter="todo" class="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-xs">Pendientes</button>
+        <button data-filter="done" class="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-xs">Comprados</button>
+      </div>
+      <div class="ml-auto flex gap-2">
+        <button id="shop-copy" class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 text-xs font-bold inline-flex items-center gap-1"><i data-lucide="copy" class="h-3.5 w-3.5"></i> Copiar</button>
+        <button id="shop-reset" class="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-xs">Reiniciar</button>
+      </div>
+    </div>
+    <div class="h-2 rounded-full bg-slate-100 dark:bg-slate-800 mt-2"><div id="shop-bar" class="h-2 rounded-full bg-emerald-500" style="width:0%"></div></div>
+
+    {% for cat, items in shop.groups %}
+      <h3 class="font-bold mt-4 mb-1">{{ shop.names[cat] }}</h3>
+      {% for it in items %}
+        {% set key = (it.name ~ '|' ~ it.unit)|lower %}
+        <label class="shop-item flex items-center gap-2 py-1.5 border-b border-slate-100 dark:border-slate-800 text-sm" data-key="{{ key }}">
+          <input type="checkbox" class="shop-check w-5 h-5 accent-emerald-600" data-key="{{ key }}" />
+          <span class="flex-1">{{ it.name }} <span class="text-slate-500">{{ it.quantity|round(1) }} {{ it.unit }}</span>{% if it.note %} <span class="text-xs text-slate-400">({{ it.note }})</span>{% endif %}</span>
+        </label>
+      {% endfor %}
+    {% else %}
+      <p class="text-sm text-slate-500 mt-2">Sin ingredientes.</p>
+    {% endfor %}
+  </section>
+</main>
+{% endblock %}

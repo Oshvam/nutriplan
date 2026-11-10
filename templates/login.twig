@@ -1,0 +1,49 @@
+{% extends "layout.twig" %}
+{% block title %}Entrar · NutriPlan{% endblock %}
+{% block content_plain %}
+<div class="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 font-sans">
+  <div class="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xs text-center">
+    <p class="font-display font-bold text-2xl text-emerald-600 dark:text-emerald-400">NutriPlan</p>
+    <h1 class="mt-2 text-lg font-bold text-slate-900 dark:text-white">Entra con tu cuenta de Google</h1>
+    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Tus dietas, tu peso y tus recetas se guardan y sincronizan en tu cuenta, en todos tus dispositivos.</p>
+    <div class="mt-5">
+      <p id="g-login-msg" class="text-xs text-slate-500 dark:text-slate-400 text-center">Cargando login de Google…</p>
+      <div id="g-login-btn" class="justify-center min-h-[40px]" style="display:none"></div>
+    </div>
+    <p id="login-error" class="hidden mt-3 text-xs text-rose-600 dark:text-rose-400"></p>
+  </div>
+</div>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+(function () {
+  var msg = document.getElementById('g-login-msg');
+  var box = document.getElementById('g-login-btn');
+  var errBox = document.getElementById('login-error');
+  function fail(t) { msg.style.display = 'none'; errBox.textContent = t; errBox.classList.remove('hidden'); }
+  window.onGoogleCredential = function (idToken) {
+    fetch('/api/auth/google', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken: idToken }) })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.success) throw new Error(data.error || 'No se pudo entrar');
+        location.href = '/';
+      })
+      .catch(function (e) { fail(e.message); });
+  };
+  fetch('/api/auth/config').then(function (r) { return r.json(); }).then(function (c) {
+    if (!c || !c.clientId) { fail('Login con Google no configurado en el servidor (falta GOOGLE_CLIENT_ID).'); return; }
+    var tries = 0;
+    var timer = setInterval(function () {
+      if (window.google && window.google.accounts && window.google.accounts.id) {
+        clearInterval(timer);
+        try {
+          window.google.accounts.id.initialize({ client_id: c.clientId, callback: function (resp) { if (resp && resp.credential) window.onGoogleCredential(resp.credential); }, ux_mode: 'popup' });
+          window.google.accounts.id.renderButton(box, { theme: 'outline', size: 'large', width: 280, text: 'signin_with', locale: 'es' });
+          msg.style.display = 'none';
+          box.style.display = 'flex';
+        } catch (e) { fail('No se pudo mostrar el botón de Google.'); }
+      } else if (++tries > 40) { clearInterval(timer); fail('No se pudo cargar el login de Google (revisa tu conexión).'); }
+    }, 250);
+  }).catch(function () { fail('No se pudo contactar con el servidor.'); });
+})();
+</script>
+{% endblock %}
