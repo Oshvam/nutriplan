@@ -5,8 +5,9 @@
 #   $env:NUTRIPLAN_FTP_PASSWORD = "tu-clave"   # o la pide por pantalla
 #   .\deploy-ftp.ps1                        # actualizacion normal (sin vendor/)
 #   .\deploy-ftp.ps1 -Vendor                # incluye vendor/ (tras cambiar composer)
+#   .\deploy-ftp.ps1 -Zip                   # empaqueta nutriplan-vX.zip para el autoinstalador (no sube nada)
 #   .\deploy-ftp.ps1 -FirstInstall -Vendor   # primera vez: + .env.example y checklist
-param([switch]$Vendor, [switch]$FirstInstall)
+param([switch]$Vendor, [switch]$FirstInstall, [switch]$Zip)
 
 # ---------------- CONFIG ----------------
 $FtpHost   = "ftp.tu-servidor.com"  # host FTP del panel
@@ -24,11 +25,7 @@ if (-not (Get-Command curl.exe -ErrorAction SilentlyContinue)) { Write-Error "Fa
 # Ficheros que NUNCA salen de tu maquina
 $excluded = @(".env", "test-login.php") | ForEach-Object { $_.ToLower() }
 
-$pass = $env:NUTRIPLAN_FTP_PASSWORD
-if (-not $pass) {
-  $sec = Read-Host "Clave FTP de $FtpUser" -AsSecureString
-  $pass = [Runtime.InteropServices.Marshal]::PtrToAutoString([Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec))
-}
+# La clave FTP solo se pide al subir (el modo -Zip no la necesita).
 # ponytail: la clave con ':' rompe --user; si la tuya lo lleva, cambiala en el panel
 $ftpBase = "ftp://$FtpHost$RemoteDir"
 $ssl = @(); if ($UseFtps) { $ssl = @("--ssl") }
@@ -45,6 +42,37 @@ foreach ($req in @("public/index.php", "config.php", "composer.json", "data/reci
 }
 Write-Host "    OK: ficheros base presentes."
 
+if ($Zip) {
+  if (-not (Test-Path (Join-Path $Root "installer.php"))) { Write-Error "Falta installer.php en local." }
+  Write-Host "==> Empaquetando ZIP para el autoinstalador..."
+  $ver = (Get-Content (Join-Path $Root "version.txt") -Raw).Trim()
+  $zipName = "nutriplan-v$ver.zip"
+  $zipPath = Join-Path $Root $zipName
+  $stage = Join-Path ([IO.Path]::GetTempPath()) "nutriplan-stage"
+  if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
+  $dirs = @("public", "src", "templates", "data", "database")
+  if ($Vendor) { $dirs += "vendor" }
+  foreach ($d in $dirs) {
+    Copy-Item (Join-Path $Root $d) (Join-Path $stage $d) -Recurse -Force
+  }
+  foreach ($f in @("composer.json", "composer.lock", "config.php", "version.txt")) {
+    Copy-Item (Join-Path $Root $f) $stage -Force
+  }
+  Get-ChildItem $stage -Recurse -File | Where-Object { $excluded -contains $_.Name.ToLower() } | Remove-Item -Force
+  if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+  Compress-Archive -Path (Join-Path $stage "*") -DestinationPath $zipPath -CompressionLevel Optimal
+  Remove-Item $stage -Recurse -Force
+  Write-Host "OK: $zipName listo en $Root"
+  Write-Host "Sube $zipName + installer.php a tu hosting y abre installer.php en el navegador."
+  exit 0
+}
+
+$pass = $env:NUTRIPLAN_FTP_PASSWORD
+if (-not $pass) {
+  $sec = Read-Host "Clave FTP de $FtpUser" -AsSecureString
+  $pass = [Runtime.InteropServices.Marshal]::PtrToAutoString([Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec))
+}
+# ponytail: la clave con ':' rompe --user; si la tuya lo lleva, cambiala en el panel
 Write-Host "==> 2/2 Subiendo por FTP a $ftpBase ..."
 $dirs = @("public", "src", "templates", "data", "database")
 if ($Vendor) { $dirs += "vendor" }

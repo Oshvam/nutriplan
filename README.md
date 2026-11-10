@@ -70,6 +70,25 @@ Sube `public/`, `src/`, `templates/`, `data/`, `database/`, `composer.json/lock`
 y `config.php`. Con `-Vendor` también sube `vendor/`. **Nunca** sube `.env`,
 `var/` ni herramientas locales. Edita la sección `CONFIG` (host, usuario, ruta).
 
+### Autoinstalador web estilo WordPress (`installer.php` + ZIP)
+
+Para un hosting sin SSH ni FTP cómodo: genera el paquete y súbelo junto al
+instalador, que te guía en el navegador.
+
+```powershell
+.\deploy-ftp.ps1 -Zip   # crea nutriplan-vX.Y.Z.zip (sin installer.php dentro)
+```
+
+1. Sube `nutriplan-vX.Y.Z.zip` e `installer.php` a tu hosting (misma carpeta).
+2. Abre `https://tu-dominio/installer.php` en el navegador.
+3. Paso 1: comprueba requisitos (PHP 8.1+, `zip`, `pdo_mysql`, `openssl`,
+   `curl`, `mbstring`). Paso 2: elige el ZIP (subido, existente o descargado
+   de GitHub) y la carpeta destino.
+4. Paso 3: mete los datos MySQL (crea la base si el usuario tiene permiso),
+   importa el esquema y escribe el `.env`.
+5. Paso 4: apunta el DocumentRoot a `public/`, añade tu dominio a los
+   orígenes de Google y **borra el instalador** con el botón (o `?bye=1`).
+
 ### Auto-actualización desde GitHub
 
 En `/perfil` → Ajustes hay un bloque de versión: comprueba la última release de
