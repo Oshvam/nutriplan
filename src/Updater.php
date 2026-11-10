@@ -4,8 +4,10 @@ namespace NutriPlan;
 use PDO;
 use ZipArchive;
 
-// Actualización automática desde releases de GitHub.
-// Descarga el zipball del último release, lo vuelca sobre public/src/
+// Actualización automática desde el código de GitHub.
+// Flujo: el ZIP de instalación se genera en local (deploy-ftp.ps1 -Zip);
+// GitHub solo sirve para cotejar version.txt y descargar el código nuevo.
+// Descarga el zip de la rama main, lo vuelca sobre public/src/
 // templates/database (+composer.json/lock y version.txt), preservando
 // .env y var/, con copia de seguridad previa en var/backups/.
 class Updater {
@@ -19,18 +21,20 @@ class Updater {
 
     public static function latest(string $repo): array {
         if ($repo === '') return ['error' => 'Sin repo configurado (GITHUB_REPO en .env)'];
-        $ch = curl_init('https://api.github.com/repos/' . $repo . '/releases/latest');
+        // Cotejo de versión: version.txt de la rama main (sin releases).
+        $ch = curl_init('https://raw.githubusercontent.com/' . $repo . '/main/version.txt');
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 20,
-            CURLOPT_HTTPHEADER => ['User-Agent: NutriPlan-Updater', 'Accept: application/vnd.github+json'],
+            CURLOPT_HTTPHEADER => ['User-Agent: NutriPlan-Updater'],
         ]);
         $raw = curl_exec($ch);
         $code = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
         curl_close($ch);
-        if ($raw === false || $code !== 200) return ['error' => "GitHub API ($code)"];
-        $j = json_decode((string)$raw, true);
-        if (!is_array($j) || empty($j['tag_name'])) return ['error' => 'Ese repo no tiene releases'];
-        return ['tag' => ltrim((string)$j['tag_name'], 'v'), 'zip' => (string)($j['zipball_url'] ?? ''), 'notes' => (string)($j['body'] ?? '')];
+        if ($raw === false || $code !== 200) return ['error' => "GitHub ($code): no se pudo leer version.txt"];
+        $tag = trim((string)$raw);
+        if (!preg_match('/^\\d+\\.\\d+\\.\\d+$/', $tag)) return ['error' => 'version.txt remoto inválido'];
+        // Código nuevo: zip de la rama (misma forma que el generado en local).
+        return ['tag' => $tag, 'zip' => 'https://codeload.github.com/' . $repo . '/zip/refs/heads/main', 'notes' => ''];
     }
 
     public static function run(PDO $pdo, string $repo, string $current): array {
@@ -58,7 +62,7 @@ class Updater {
             curl_close($ch);
             fclose($fh);
             if ($code !== 200 || filesize($zipFile) < 1000) throw new \RuntimeException('Descarga fallida (HTTP ' . $code . ')');
-            // Extracción (el zipball trae una sola carpeta raíz)
+            // Extracción (el zip de GitHub trae una sola carpeta raíz)
             $zip = new ZipArchive();
             if ($zip->open($zipFile) !== true) throw new \RuntimeException('Zip corrupto');
             $zip->extractTo($tmp . '/src');

@@ -54,7 +54,7 @@ y un cron o supervisor si quieres. No hay demonios ni colas: basta PHP + MySQL.
 | `MISTRAL_API_KEY` | **Global del servidor**: los usuarios no meten ninguna clave |
 | `DB_HOST/DB_NAME/DB_USER/DB_PASS` | Conexión MySQL |
 | `VAPID_*` | Push propias; vacías se autogeneran en la tabla `settings` |
-| `GITHUB_REPO` | `Oshvam/nutriplan` para auto-actualizar desde releases |
+| `GITHUB_REPO` | `Oshvam/nutriplan` para cotejar versión y auto-actualizar |
 
 ## Despliegue
 
@@ -91,10 +91,12 @@ instalador, que te guía en el navegador.
 
 ### Auto-actualización desde GitHub
 
-En `/perfil` → Ajustes hay un bloque de versión: comprueba la última release de
-`GITHUB_REPO` y actualiza con un clic (descarga el zip, hace backup en
-`var/backups`, preserva `.env` y `var/`, aplica el esquema y limpia la caché).
-Requiere sesión iniciada.
+En `/perfil` → Ajustes hay un bloque de versión: coteja tu `version.txt` con
+el del repo y actualiza con un clic (descarga el código de la rama, hace
+backup en `var/backups`, preserva `.env` y `var/`, aplica el esquema y
+limpia la caché). Requiere sesión iniciada. El ZIP de instalación se
+genera siempre en local (`.\deploy-ftp.ps1 -Zip`); GitHub solo se usa
+para comparar versiones y traer código nuevo.
 
 ## Estructura
 
@@ -107,7 +109,7 @@ Requiere sesión iniciada.
 | `src/Nutrition.php` | Cálculos clínicos (Mifflin/St Jeor, Schofield, PAL, SEEDO) |
 | `src/Mistral.php` | Cliente Mistral con fallback algorítmico |
 | `src/Push.php` | Web Push VAPID (EC P-256 + aes-128-gcm, solo openssl) |
-| `src/Updater.php` | Auto-update desde releases de GitHub |
+| `src/Updater.php` | Auto-update desde el código de GitHub |
 | `templates/` | Vistas Twig (plan, hoy, recetas, perfil, config, compra, receta, IA) |
 | `database/schema.sql` | Esquema MySQL (idempotente) |
 | `data/recipes.json` | 1126 recetas del catálogo |
