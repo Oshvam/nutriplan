@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+@source "./templates/**/*.twig";
+@source "./src/**/*.php";
+@source "./public/app.js";
+@source "./installer.php";
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body { font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; }
+  h1, h2, h3 { font-family: "Outfit", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgb(148, 163, 184); border-radius: 8px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgb(100, 116, 139); }
+}

@@ -113,6 +113,8 @@ para comparar versiones y traer código nuevo.
 | --- | --- |
 | `public/index.php` | Front controller + mini-router (API JSON + páginas) |
 | `public/app.js` | Interacciones (sin recarga: toggle/swap/regenerar) |
+| `public/assets/app.css` | Tailwind **compilado** (no se compila en el navegador) |
+| `public/assets/lucide-1.72.0.min.js` | Iconos lucide pinneados y servidos en local |
 | `src/Db.php` | PDO MySQL: users, sessions, kv, settings |
 | `src/Auth.php` | Login Google (tokeninfo) + cookie de sesión |
 | `src/Nutrition.php` | Cálculos clínicos (Mifflin/St Jeor, Schofield, PAL, SEEDO) |
@@ -121,7 +123,27 @@ para comparar versiones y traer código nuevo.
 | `src/Updater.php` | Auto-update desde el código de GitHub |
 | `templates/` | Vistas Twig (plan, hoy, recetas, perfil, config, compra, receta, IA) |
 | `database/schema.sql` | Esquema MySQL (idempotente) |
-| `data/recipes.json` | 1126 recetas del catálogo |
+| `data/recipes.json` | 1126 recetas completas (ingredientes y pasos) |
+| `data/recipes-index.json` | Catálogo ligero para plan/recetario (lo genera el script de abajo) |
+
+## CSS y assets
+
+El CSS ya viene compilado en `public/assets/app.css`; el servidor **no** necesita
+Node. Solo hace falta Node si cambias clases de Tailwind en las plantillas:
+
+```bash
+npm install          # una vez (tailwindcss + @tailwindcss/cli)
+npm run build:css    # regenera public/assets/app.css (minificado)
+```
+
+Si cambias `data/recipes.json` (recetas nuevas), regenera el índice ligero:
+
+```bash
+php tools/build-recipes-index.php
+```
+
+Los estáticos van con `Cache-Control: immutable` (1 año) y un `?v=<version>`
+tomado de `version.txt`: al subir versión, los navegadores piden el CSS/JS nuevo.
 
 ## Datos por cuenta
 

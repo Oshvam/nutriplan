@@ -44,6 +44,11 @@ $twig->addFunction(new \Twig\TwigFunction('meal_target', function (array $needs,
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?? '/';
 
+// HTML siempre fresco; los estaticos versionados los cachea public/.htaccess.
+if (!str_starts_with($path, '/api/')) {
+    header('Cache-Control: no-store, must-revalidate');
+}
+
 function jsonOut($data, int $status = 200): void {
     http_response_code($status);
     header('Content-Type: application/json; charset=utf-8');
@@ -137,13 +142,28 @@ if ($path === '/api/me/sync' && $method === 'PUT') {
 
 // --- Helpers plan/recetas ---
 
+/** Catálogo ligero (sin ingredientes ni pasos): suficiente para plan, catálogo y recomendaciones. */
 function loadRecipes(): array {
     static $cache = null;
     if ($cache === null) {
-        $json = @file_get_contents(__DIR__ . '/../data/recipes.json');
+        $json = @file_get_contents(__DIR__ . '/../data/recipes-index.json');
+        if (!$json) $json = @file_get_contents(__DIR__ . '/../data/recipes.json');
         $cache = json_decode($json ?: '[]', true) ?: [];
     }
     return $cache;
+}
+
+/** Receta completa (con ingredientes y pasos) solo para la ficha /receta y la lista de la compra. */
+function loadRecipeFull(string $id): ?array {
+    static $byId = null;
+    if ($byId === null) {
+        $byId = [];
+        $json = @file_get_contents(__DIR__ . '/../data/recipes.json');
+        foreach ((json_decode($json ?: '[]', true) ?: []) as $r) {
+            if (isset($r['id'])) $byId[$r['id']] = $r;
+        }
+    }
+    return $byId[$id] ?? null;
 }
 
 function recipeById(string $id): ?array {
@@ -782,6 +802,12 @@ if ($path === '/' || $path === '/index.php') {
         $plan = loadPlan($pdo, $me, $profile);
         $di = isset($_GET['dia']) ? max(0, min(6, (int)$_GET['dia'])) : (int)date('N') - 1;
         $meals = array_map('resolveMeal', $plan[$di]['meals'] ?? []);
+        // El índice es ligero: hidratar ingredientes solo aquí.
+        foreach ($meals as &$meal) {
+            $full = loadRecipeFull((string)($meal['recipe']['id'] ?? ''));
+            if ($full) $meal['recipe'] = $full;
+        }
+        unset($meal);
         echo $twig->render('compra.twig', $base + [
             'tab' => 'compra', 'plan' => $plan, 'di' => $di,
             'shop' => shoppingItems($meals),
@@ -882,7 +908,7 @@ if ($path === '/receta') {
     $user = Db::getUser($pdo, $me);
     $profile = getProfile($pdo, $me);
     if (!$profile) { header('Location: /ajustes'); exit; }
-    $r = recipeById((string)($_GET['id'] ?? ''));
+    $r = loadRecipeFull((string)($_GET['id'] ?? ''));
     if (!$r) { http_response_code(404); echo 'Receta no encontrada'; exit; }
     $serv = (int)($_GET['r'] ?? 1);
     if (!in_array($serv, [1, 2, 4], true)) $serv = 1;
