@@ -34,7 +34,12 @@
         </label>
       {% endfor %}
     {% else %}
-      <p class="text-sm text-slate-500 mt-2">Sin ingredientes.</p>
+      <div class="mt-4 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-6 text-center">
+        <i data-lucide="shopping-basket" class="h-7 w-7 mx-auto text-slate-400"></i>
+        <p class="mt-2 font-semibold">Este día no tiene ingredientes</p>
+        <p class="text-sm text-slate-500">Añade comidas al plan y la lista se generará sola.</p>
+        <a href="/?tab=plan" class="inline-block mt-3 px-4 py-2 rounded-full bg-emerald-600 text-white text-sm font-bold">Ir al plan semanal</a>
+      </div>
     {% endfor %}
   </section>
 </main>

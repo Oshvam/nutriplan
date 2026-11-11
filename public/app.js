@@ -30,6 +30,63 @@ async function npReq(url, method, body) {
 }
 const todayIdx = () => (new Date().getDay() + 6) % 7;
 
+// --- UI: toasts, confirmación propia y estado "ocupado" ---
+const toast = (msg, opts) => {
+  opts = opts || {};
+  const box = document.getElementById('np-toasts');
+  if (!box) return;
+  const el = document.createElement('div');
+  el.className = 'flex items-start gap-3 rounded-xl px-4 py-3 text-sm shadow-2xl border ' +
+    (opts.error ? 'bg-rose-600 border-rose-500 text-white'
+                : 'bg-slate-900/95 dark:bg-slate-800 border-slate-700 text-white');
+  const p = document.createElement('p');
+  p.className = 'flex-1';
+  p.textContent = msg;
+  el.appendChild(p);
+  if (opts.action) {
+    const a = document.createElement('button');
+    a.className = 'font-bold underline underline-offset-2 shrink-0';
+    a.textContent = opts.action.label;
+    a.onclick = async () => { el.remove(); try { await opts.action.onClick(); } catch (e) { toast(e.message, { error: true }); } };
+    el.appendChild(a);
+  }
+  box.appendChild(el);
+  setTimeout(() => el.remove(), opts.action ? 9000 : 4500);
+};
+
+const askConfirm = (msg, label) => new Promise((resolve) => {
+  const box = document.getElementById('np-confirm');
+  if (!box) { resolve(window.confirm(msg)); return; }
+  document.getElementById('np-confirm-msg').textContent = msg;
+  document.getElementById('np-confirm-yes').textContent = label || 'Continuar';
+  const yes = document.getElementById('np-confirm-yes');
+  const no = document.getElementById('np-confirm-no');
+  box.classList.remove('hidden');
+  if (window.lucide) lucide.createIcons();
+  const done = (v) => {
+    box.classList.add('hidden');
+    box.removeEventListener('click', onBackdrop);
+    document.removeEventListener('keydown', onKey);
+    yes.onclick = null; no.onclick = null;
+    resolve(v);
+  };
+  const onBackdrop = (e) => { if (e.target === box) done(false); };
+  const onKey = (e) => { if (e.key === 'Escape') done(false); if (e.key === 'Enter') done(true); };
+  box.addEventListener('click', onBackdrop);
+  document.addEventListener('keydown', onKey);
+  yes.onclick = () => done(true);
+  no.onclick = () => done(false);
+});
+
+// Marca un botón como ocupado (deshabilitado + pulso) mientras corre una petición.
+const busy = (btn, on) => {
+  if (!btn) return;
+  btn.disabled = !!on;
+  btn.classList.toggle('opacity-60', !!on);
+  btn.classList.toggle('pointer-events-none', !!on);
+  btn.classList.toggle('animate-pulse', !!on);
+};
+
 // Re-render parcial: sustituye solo las regiones del plan sin recargar la página.
 async function refreshPlanRegions() {
   const r = await fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
@@ -50,61 +107,102 @@ document.addEventListener('click', async (e) => {
       await npReq('/api/plan/toggle', 'POST', { dayNumber: +b.dataset.dia + 1, slotId: b.dataset.slot });
       await refreshPlanRegions();
     } else if (act === 'swap') {
+      busy(b, true);
       await npReq('/api/plan/swap', 'POST', { dayNumber: +b.dataset.dia + 1, slotId: b.dataset.slot });
       await refreshPlanRegions();
+      toast('Plato sustituido.');
     } else if (act === 'regen') {
-      if (!confirm('¿Regenerar el plan de la semana? Se pierden los completados.')) return;
+      if (!await askConfirm('¿Regenerar el plan de la semana? Se perderán las comidas marcadas como completadas.', 'Regenerar')) return;
+      busy(b, true);
       await npReq('/api/plan/regenerate', 'POST');
       await refreshPlanRegions();
+      toast('Plan de la semana regenerado.');
     } else if (act === 'apply' || act === 'apply-hoy') {
       const recipe = JSON.parse(b.dataset.recipe);
       const dia = b.dataset.dia !== undefined && b.dataset.dia !== '' ? +b.dataset.dia : todayIdx();
+      busy(b, true);
       await npReq('/api/plan/apply', 'POST', { dayNumber: dia + 1, slotId: b.dataset.slot, recipe });
       if (act === 'apply-hoy') {
-        b.disabled = true;
+        b.classList.remove('animate-pulse', 'opacity-60', 'pointer-events-none');
         b.innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5"></i><span>En tu menú</span>';
         if (window.lucide) lucide.createIcons();
+        toast('Añadido a tu menú de hoy.');
       } else {
         location.href = b.dataset.back || '/';
       }
     } else if (act === 'wdel') {
-      if (!confirm('¿Borrar este registro?')) return;
+      if (!await askConfirm('¿Borrar este registro de peso?', 'Borrar')) return;
+      const back = { date: b.dataset.date, weight: +b.dataset.weight, note: b.dataset.note || '' };
       await npReq('/api/weight', 'DELETE', { date: b.dataset.date });
-      location.reload();
+      toast('Registro borrado.', { action: { label: 'Deshacer', onClick: async () => {
+        await npReq('/api/weight', 'POST', back);
+        location.reload();
+      } } });
+      b.closest('tr')?.remove();
     } else if (act === 'logout') {
       await npReq('/api/auth/logout', 'POST');
       location.href = '/';
     } else if (b.hasAttribute('data-ms')) {
       const msg = document.getElementById('ms-msg');
       const model = document.getElementById('ms-model').value;
+      busy(b, true);
       msg.textContent = '…';
       await npReq('/api/settings/mistral', 'POST', { model });
       msg.textContent = 'Guardado.';
+      toast('Modelo de IA guardado.');
     }
-  } catch (err) { alert(err.message); }
+  } catch (err) {
+    toast(err.message, { error: true });
+  } finally {
+    busy(b, false);
+  }
 });
 
-// Formularios: peso, nombre, onboarding
-const wf = document.getElementById('weight-form');
-if (wf) wf.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  try {
-    await npReq('/api/weight', 'POST', { date: document.getElementById('w-date').value,
-      weight: parseFloat(document.getElementById('w-weight').value),
-      note: document.getElementById('w-note').value });
-    location.reload();
-  } catch (err) { alert(err.message); }
+// Refresca un bloque de la página sin recargar (útil tras mutaciones).
+async function refreshBlock(id) {
+  const r = await fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+  const doc = new DOMParser().parseFromString(await r.text(), 'text/html');
+  const fresh = doc.getElementById(id), cur = document.getElementById(id);
+  if (fresh && cur) {
+    cur.innerHTML = fresh.innerHTML;
+    if (window.lucide) lucide.createIcons();
+  }
+}
+
+// Formularios de perfil (delegado: el bloque de peso se re-renderiza sin recargar).
+document.addEventListener('submit', async (e) => {
+  const form = e.target;
+  if (form.id === 'weight-form') {
+    e.preventDefault();
+    const btn = form.querySelector('button');
+    busy(btn, true);
+    try {
+      await npReq('/api/weight', 'POST', { date: document.getElementById('w-date').value,
+        weight: parseFloat(document.getElementById('w-weight').value),
+        note: document.getElementById('w-note').value });
+      await refreshBlock('weight-block');
+      toast('Peso registrado.');
+    } catch (err) { toast(err.message, { error: true }); }
+    finally { busy(btn, false); }
+  } else if (form.id === 'name-form') {
+    e.preventDefault();
+    const btn = form.querySelector('button');
+    busy(btn, true);
+    try {
+      const d = await npReq('/api/profile', 'GET');
+      const p = Object.assign({}, d.profile, { name: document.getElementById('profile-name').value });
+      await npReq('/api/profile', 'PUT', { profile: p });
+      toast('Nombre guardado.');
+    } catch (err) { toast(err.message, { error: true }); }
+    finally { busy(btn, false); }
+  }
 });
 
-const nf = document.getElementById('name-form');
-if (nf) nf.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  try {
-    const d = await npReq('/api/profile', 'GET');
-    const p = Object.assign({}, d.profile, { name: document.getElementById('profile-name').value });
-    await npReq('/api/profile', 'PUT', { profile: p });
-    location.reload();
-  } catch (err) { alert(err.message); }
+document.addEventListener('click', (e) => {
+  if (e.target.closest('[data-focus-weight]')) {
+    const i = document.getElementById('w-weight');
+    if (i) { i.focus(); i.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+  }
 });
 
 // Onboarding por pasos (clon del OnboardingModal: botones + resumen en vivo)
@@ -274,15 +372,30 @@ if (shop) {
       c.closest('.shop-item').style.display = (m === 'all' || (m === 'done') === done) ? '' : 'none';
     });
   }));
-  document.getElementById('shop-reset').onclick = () => { localStorage.removeItem('np_shop'); location.reload(); };
+  document.getElementById('shop-reset').onclick = async () => {
+    const snapshot = JSON.stringify(store);
+    if (!await askConfirm('¿Reiniciar la lista de la compra? Se desmarcarán todos los productos.', 'Reiniciar')) return;
+    Object.keys(store).forEach((k) => delete store[k]);
+    localStorage.removeItem('np_shop');
+    paint();
+    toast('Lista reiniciada.', { action: { label: 'Deshacer', onClick: async () => {
+      Object.assign(store, JSON.parse(snapshot || '{}'));
+      localStorage.setItem('np_shop', JSON.stringify(store));
+      paint();
+    } } });
+  };
   document.getElementById('shop-copy').onclick = async () => {
     let txt = '🛒 Lista de la compra — NutriPlan\n', h = '';
     shop.querySelectorAll('h3, .shop-item').forEach((el) => {
       if (el.tagName === 'H3') { h = el.textContent.trim(); txt += '\n' + h + '\n'; }
       else if (el.style.display !== 'none') txt += '· ' + el.querySelector('span').textContent.trim().replace(/\s+/g, ' ') + '\n';
     });
-    await navigator.clipboard.writeText(txt).catch(() => {});
-    alert('Lista copiada.');
+    try {
+      await navigator.clipboard.writeText(txt);
+      toast('Lista copiada al portapapeles.');
+    } catch (e) {
+      toast('No se pudo copiar al portapapeles.', { error: true });
+    }
   };
   paint();
 }
@@ -305,8 +418,16 @@ if (pushBtn && 'serviceWorker' in navigator) {
       const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(vapid) });
       await npReq('/api/push/subscribe', 'POST', { subscription: sub.toJSON() });
       st.textContent = 'activadas ✓'; pushBtn.textContent = 'Probar aviso';
-      pushBtn.onclick = async () => { await npReq('/api/push/test', 'POST', { endpoint: sub.endpoint }); alert('Aviso enviado.'); };
-    } catch (err) { alert('No se pudo activar: ' + err.message); }
+      toast('Notificaciones push activadas.');
+      pushBtn.onclick = async () => {
+        busy(pushBtn, true);
+        try {
+          await npReq('/api/push/test', 'POST', { endpoint: sub.endpoint });
+          toast('Aviso enviado.');
+        } catch (err) { toast(err.message, { error: true }); }
+        finally { busy(pushBtn, false); }
+      };
+    } catch (err) { toast('No se pudo activar: ' + err.message, { error: true }); }
   };
 }
 
@@ -316,7 +437,10 @@ if (iaGo) iaGo.addEventListener('click', async () => {
   const msg = document.getElementById('ia-msg'), box = document.getElementById('ia-results');
   const profile = JSON.parse(document.getElementById('px').textContent);
   const needs = JSON.parse(document.getElementById('nx').textContent);
-  msg.textContent = 'Generando…'; box.innerHTML = '';
+  busy(iaGo, true);
+  msg.textContent = 'Generando…';
+  // Esqueleto mientras la IA responde.
+  box.innerHTML = '<article class="rounded-2xl bg-slate-50 dark:bg-slate-800 p-4 animate-pulse"><div class="h-4 w-40 bg-slate-200 dark:bg-slate-700 rounded"></div><div class="h-3 w-56 bg-slate-200 dark:bg-slate-700 rounded mt-2"></div><div class="h-3 w-full bg-slate-200 dark:bg-slate-700 rounded mt-3"></div><div class="h-3 w-2/3 bg-slate-200 dark:bg-slate-700 rounded mt-1.5"></div></article>';
   try {
     const d = await npReq('/api/ai-recipe-recommendation', 'POST', {
       mealType: window.__IACTX.slot || 'comida',
@@ -327,6 +451,7 @@ if (iaGo) iaGo.addEventListener('click', async () => {
       currentWeight: profile.currentWeight, targetWeight: profile.targetWeight, age: profile.age,
       isChildOrTeen: !!profile.isChildOrTeen });
     msg.textContent = d.isAiGenerated ? 'Generadas con IA.' : 'Generadas localmente (sin clave de IA).';
+    box.innerHTML = '';
     d.recipes.forEach((r) => {
       const el = document.createElement('article');
       el.className = 'rounded-2xl bg-slate-50 dark:bg-slate-800 p-4';
@@ -343,7 +468,8 @@ if (iaGo) iaGo.addEventListener('click', async () => {
       box.appendChild(el);
     });
     if (window.lucide) lucide.createIcons();
-  } catch (err) { msg.textContent = err.message; }
+  } catch (err) { msg.textContent = err.message; box.innerHTML = ''; toast(err.message, { error: true }); }
+  finally { busy(iaGo, false); }
 });
 
 // PWA: registro del SW + popup de instalación.
@@ -398,13 +524,49 @@ if ('serviceWorker' in navigator) {
     } catch (err) { st.textContent = 'error'; msg.textContent = err.message; }
   };
   run.onclick = async () => {
-    if (!confirm('Se descargará la última versión y se aplicará. ¿Continuar?')) return;
+    if (!await askConfirm('Se descargará la última versión y se aplicará. ¿Continuar?', 'Actualizar')) return;
+    busy(run, true);
     msg.style.color = ''; msg.textContent = 'Actualizando… puede tardar un minuto.';
     try {
       const d = await npReq('/api/update', 'POST');
       msg.style.color = '#059669'; msg.textContent = d.message;
       st.textContent = 'instalada ' + (d.to || d.current || '');
       run.classList.add('hidden');
-    } catch (err) { msg.style.color = '#dc2626'; msg.textContent = err.message; }
+      toast('Actualización aplicada.');
+    } catch (err) { msg.style.color = '#dc2626'; msg.textContent = err.message; toast(err.message, { error: true }); }
+    finally { busy(run, false); }
   };
+})();
+
+// Recetario: filtros y búsqueda reflejados en la URL, sin recargar (debounce en el texto).
+(() => {
+  const form = document.getElementById('recetas-form');
+  if (!form) return;
+  const box = document.getElementById('recetas-results');
+  let timer = null, seq = 0;
+
+  const apply = async () => {
+    const params = new URLSearchParams(new FormData(form));
+    params.delete('n');
+    const my = ++seq;
+    box.classList.add('opacity-60', 'animate-pulse');
+    try {
+      const r = await fetch('/?' + params.toString(), { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const doc = new DOMParser().parseFromString(await r.text(), 'text/html');
+      const fresh = doc.getElementById('recetas-results');
+      if (my !== seq) return;
+      if (fresh) box.innerHTML = fresh.innerHTML;
+      history.replaceState(null, '', '/?' + params.toString());
+      if (window.lucide) lucide.createIcons();
+    } catch (e) {
+      toast('No se pudieron aplicar los filtros.', { error: true });
+    } finally {
+      if (my === seq) box.classList.remove('opacity-60', 'animate-pulse');
+    }
+  };
+
+  form.addEventListener('submit', (e) => { e.preventDefault(); apply(); });
+  form.querySelectorAll('select').forEach((s) => s.addEventListener('change', apply));
+  const q = form.querySelector('input[name="q"]');
+  if (q) q.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(apply, 350); });
 })();

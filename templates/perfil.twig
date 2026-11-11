@@ -62,7 +62,7 @@
     </div>
   </section>
 
-  <section class="rounded-2xl bg-white dark:bg-slate-900 shadow-sm p-4">
+  <section id="weight-block" class="rounded-2xl bg-white dark:bg-slate-900 shadow-sm p-4">
     <h2 class="font-bold text-base mb-2"><i data-lucide="trending-down" class="inline h-4 w-4 text-emerald-600 dark:text-emerald-400"></i> Seguimiento de peso</h2>
     {% if wstats %}
       <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-center text-sm mb-3">
@@ -85,7 +85,8 @@
         {% endfor %}
       </svg>
     {% else %}
-      <p class="text-sm text-slate-500">Aún no hay registros. Añade el primero:</p>
+      <p class="text-sm text-slate-500">Aún no hay registros de peso.</p>
+      <button type="button" data-focus-weight class="mt-2 px-4 py-2 rounded-full bg-emerald-600 text-white text-sm font-bold">Añadir el primero</button>
     {% endif %}
     <form id="weight-form" class="flex flex-wrap gap-2 mt-3 text-sm">
       <input type="date" id="w-date" value="{{ 'now'|date('Y-m-d') }}" class="rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent p-2" />
@@ -103,7 +104,7 @@
               <td class="py-1.5">{{ rec.date }}</td>
               <td>{{ rec.weight }} kg {% if prev %}<span class="text-xs text-slate-500">({{ (rec.weight - prev.weight)|round(1) }})</span>{% endif %}</td>
               <td class="text-slate-500">{{ rec.note ?? '' }}</td>
-              <td class="text-right">{% if hist|length > 1 %}<button data-act="wdel" data-date="{{ rec.date }}" class="text-red-500" title="Borrar"><i data-lucide="trash-2" class="h-4 w-4"></i></button>{% endif %}</td>
+              <td class="text-right">{% if hist|length > 1 %}<button data-act="wdel" data-date="{{ rec.date }}" data-weight="{{ rec.weight }}" data-note="{{ rec.note ?? '' }}" class="text-red-500" title="Borrar"><i data-lucide="trash-2" class="h-4 w-4"></i></button>{% endif %}</td>
             </tr>
           {% endfor %}
         </tbody>

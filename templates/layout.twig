@@ -220,6 +220,16 @@
     <button id="install-no" class="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 shrink-0" aria-label="Ahora no"><i data-lucide="x" class="w-4 h-4"></i></button>
   </div>
 </div>
+<div id="np-toasts" class="fixed z-[60] inset-x-3 bottom-20 lg:bottom-6 lg:left-auto lg:right-6 lg:w-96 space-y-2" role="status" aria-live="polite"></div>
+<div id="np-confirm" class="hidden fixed inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs" role="dialog" aria-modal="true" aria-labelledby="np-confirm-msg">
+  <div class="w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-5">
+    <p id="np-confirm-msg" class="text-sm text-slate-700 dark:text-slate-300"></p>
+    <div class="flex gap-2 justify-end mt-4">
+      <button id="np-confirm-no" class="px-4 py-2 rounded-full bg-slate-100 dark:bg-slate-800 text-sm font-medium">Cancelar</button>
+      <button id="np-confirm-yes" class="px-4 py-2 rounded-full bg-emerald-600 text-white text-sm font-bold">Continuar</button>
+    </div>
+  </div>
+</div>
 <script src="/assets/lucide-1.72.0.min.js"></script>
 <script>try { lucide.createIcons(); } catch (e) {}</script>
 <script src="/app.js?v={{ config.APP_VERSION|default('1') }}" defer></script>
