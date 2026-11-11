@@ -1,0 +1,60 @@
+# Compila el APK de NutriPlan en la nube (sin instalar nada en el PC).
+name: APK Android
+
+on:
+  push:
+    branches: [main, master]
+    paths: ['app-mobil/**']
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Dependencias
+        working-directory: app-mobil
+        run: flutter pub get
+
+      - name: Análisis
+        working-directory: app-mobil
+        run: flutter analyze
+
+      - name: Tests
+        working-directory: app-mobil
+        run: flutter test
+
+      # Firma release: si existen los secretos se usa tu keystore estable;
+      # si no, Gradle firma con las claves debug (el APK instala igual).
+      - name: Keystore de firma (opcional)
+        working-directory: app-mobil/android
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > app/upload-keystore.jks
+            {
+              echo "storePassword=$STORE_PASSWORD"
+              echo "keyPassword=$KEY_PASSWORD"
+              echo "keyAlias=$KEY_ALIAS"
+              echo "storeFile=upload-keystore.jks"
+            } > key.properties
+          fi
+
+      - name: Compilar APK
+        working-directory: app-mobil
+        run: flutter build apk --release
+
+      - name: Publicar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: nutriplan-apk
+          path: app-mobil/build/app/outputs/flutter-apk/app-release.apk

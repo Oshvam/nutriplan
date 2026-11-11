@@ -440,6 +440,59 @@ if ($path === '/api/weight' && $method === 'DELETE') {
     jsonOut(['success' => true, 'history' => $hist]);
 }
 
+// --- API recetas/lista para cliente nativo (mismos helpers que las páginas Twig) ---
+
+if ($path === '/api/recipes' && $method === 'GET') {
+    if (!$me) jsonOut(['success' => false, 'error' => 'Sesión no iniciada'], 401);
+    $fq = ['q' => trim((string)($_GET['q'] ?? '')), 'tiempo' => (string)($_GET['tiempo'] ?? ''),
+        'kcal' => (string)($_GET['kcal'] ?? ''), 'momento' => (string)($_GET['momento'] ?? ''),
+        'tag' => (string)($_GET['tag'] ?? '')];
+    $all = filterRecipes($fq);
+    $n = max(12, min(600, (int)($_GET['n'] ?? 60)));
+    $tags = [];
+    foreach (loadRecipes() as $r) foreach ($r['tags'] ?? [] as $t) $tags[$t] = ($tags[$t] ?? 0) + 1;
+    arsort($tags);
+    jsonOut(['success' => true, 'total' => count($all), 'recipes' => array_slice($all, 0, $n),
+        'tags' => array_slice(array_keys($tags), 0, 12)]);
+}
+
+if ($path === '/api/recipe' && $method === 'GET') {
+    if (!$me) jsonOut(['success' => false, 'error' => 'Sesión no iniciada'], 401);
+    $r = loadRecipeFull((string)($_GET['id'] ?? ''));
+    if (!$r) jsonOut(['success' => false, 'error' => 'Receta no encontrada'], 404);
+    jsonOut(['success' => true, 'recipe' => $r]);
+}
+
+if ($path === '/api/hoy' && $method === 'GET') {
+    if (!$me) jsonOut(['success' => false, 'error' => 'Sesión no iniciada'], 401);
+    $profile = getProfile($pdo, $me);
+    if (!$profile) jsonOut(['success' => false, 'error' => 'Sin perfil'], 404);
+    $needs = Nutrition::calculateNeeds($profile);
+    $mealType = (string)($_GET['meal'] ?? 'comida');
+    $maxTime = isset($_GET['tiempo']) && $_GET['tiempo'] !== '' ? (int)$_GET['tiempo'] : null;
+    $ingredient = trim((string)($_GET['ing'] ?? ''));
+    $style = trim((string)($_GET['estilo'] ?? ''));
+    $craving = trim((string)($_GET['antojo'] ?? ''));
+    $recs = recommendFor($profile, $needs, $mealType, $ingredient ?: $craving, $style ?: null, $maxTime);
+    jsonOut(['success' => true, 'recs' => $recs, 'mealType' => $mealType,
+        'target' => mealCalorieTarget($mealType, (int)($needs['targetCalories'] ?? 0))]);
+}
+
+if ($path === '/api/shopping' && $method === 'GET') {
+    if (!$me) jsonOut(['success' => false, 'error' => 'Sesión no iniciada'], 401);
+    $profile = getProfile($pdo, $me);
+    if (!$profile) jsonOut(['success' => false, 'error' => 'Sin perfil'], 404);
+    $plan = loadPlan($pdo, $me, $profile);
+    $di = isset($_GET['dia']) ? max(0, min(6, (int)$_GET['dia'])) : (int)date('N') - 1;
+    $meals = array_map('resolveMeal', $plan[$di]['meals'] ?? []);
+    foreach ($meals as &$meal) {
+        $full = loadRecipeFull((string)($meal['recipe']['id'] ?? ''));
+        if ($full) $meal['recipe'] = $full;
+    }
+    unset($meal);
+    jsonOut(['success' => true, 'day' => $plan[$di] ?? null, 'shop' => shoppingItems($meals)]);
+}
+
 
 
 if ($path === '/' || $path === '/index.php') {
