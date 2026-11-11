@@ -1,0 +1,21 @@
+# NutriPlan en hosting compartido (DirectAdmin/cPanel) cuando el DocumentRoot
+# es public_html y NO se puede cambiar a public_html/public.
+#
+# INSTALACIÓN: sube este fichero a public_html/ renombrado como `.htaccess`
+# (la app debe estar en public_html/ con su carpeta public/ intacta:
+#  public_html/public/index.php, public_html/src/, public_html/vendor/, ...).
+#
+# Hace que https://tu-dominio/ sirva public/index.php de forma transparente
+# (las URLs no muestran /public/).
+
+RewriteEngine On
+
+# Exclusión temporal de diagnóstico (sonda). Quitar junto con probe-redir.php.
+RewriteRule ^probe-redir\.php$ - [L]
+
+# Raíz -> public/
+RewriteRule ^$ public/ [L]
+
+# Todo lo que no empiece por public/ -> public/...
+RewriteCond %{REQUEST_URI} !^/public/
+RewriteRule ^(.*)$ public/$1 [L]

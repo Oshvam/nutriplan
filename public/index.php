@@ -740,7 +740,7 @@ if ($path === '/' || $path === '/index.php') {
     needLogin($twig, $config, $me);
     $user = Db::getUser($pdo, $me);
     $profile = getProfile($pdo, $me);
-    if (!$profile) { header('Location: /config'); exit; }
+    if (!$profile) { header('Location: /ajustes'); exit; }
     $needs = Nutrition::calculateNeeds($profile);
     $base = ['config' => $config, 'user' => $user, 'profile' => $profile, 'needs' => $needs,
         'greeting' => Nutrition::greeting($user['name'] ?? null),
@@ -812,7 +812,7 @@ if ($path === '/perfil') {
     needLogin($twig, $config, $me);
     $user = Db::getUser($pdo, $me);
     $profile = getProfile($pdo, $me);
-    if (!$profile) { header('Location: /config'); exit; }
+    if (!$profile) { header('Location: /ajustes'); exit; }
     $kv = Db::getAllKv($pdo, $me);
     $hist = array_values(json_decode($kv['nutriplan_weight_history'] ?? '[]', true) ?: []);
     $ms = Mistral::getSettings();
@@ -829,7 +829,7 @@ if ($path === '/perfil') {
     exit;
 }
 
-if ($path === '/config') {
+if ($path === '/ajustes') {
     needLogin($twig, $config, $me);
     if ($method === 'POST') {
         // Guardado sin JS (los grupos de botones llegan en hidden inputs)
@@ -881,7 +881,7 @@ if ($path === '/receta') {
     needLogin($twig, $config, $me);
     $user = Db::getUser($pdo, $me);
     $profile = getProfile($pdo, $me);
-    if (!$profile) { header('Location: /config'); exit; }
+    if (!$profile) { header('Location: /ajustes'); exit; }
     $r = recipeById((string)($_GET['id'] ?? ''));
     if (!$r) { http_response_code(404); echo 'Receta no encontrada'; exit; }
     $serv = (int)($_GET['r'] ?? 1);
@@ -900,7 +900,7 @@ if ($path === '/ia') {
     needLogin($twig, $config, $me);
     $user = Db::getUser($pdo, $me);
     $profile = getProfile($pdo, $me);
-    if (!$profile) { header('Location: /config'); exit; }
+    if (!$profile) { header('Location: /ajustes'); exit; }
     echo $twig->render('ia.twig', [
         'config' => $config, 'user' => $user, 'profile' => $profile,
         'needs' => Nutrition::calculateNeeds($profile), 'tab' => 'plan',
