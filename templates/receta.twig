@@ -6,9 +6,9 @@
   <article class="rounded-2xl bg-white dark:bg-slate-900 shadow-sm p-5">
     <h1 class="text-xl font-bold">{{ r.imageEmoji }} {{ r.title }}</h1>
     <p class="text-sm text-slate-500">{{ r.subtitle }}</p>
-    <div class="flex gap-2 mt-3 text-sm">
+    <div class="grid grid-cols-3 gap-2 mt-3 text-sm">
       {% for n in [1,2,4] %}
-        <a href="/receta?id={{ r.id }}&r={{ n }}{{ dia is not null ? '&dia=' ~ dia : '' }}{{ slot ? '&slot=' ~ slot : '' }}&back={{ back|url_encode }}" class="px-3 py-1.5 rounded-full font-bold {{ serv == n ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800' }}">{{ n }} {{ n == 1 ? 'ración' : 'raciones' }}</a>
+        <a href="/receta?id={{ r.id }}&r={{ n }}{{ dia is not null ? '&dia=' ~ dia : '' }}{{ slot ? '&slot=' ~ slot : '' }}&back={{ back|url_encode }}" class="px-3 py-1.5 rounded-full font-bold text-center whitespace-nowrap {{ serv == n ? 'bg-emerald-600 text-white' : 'bg-slate-100 dark:bg-slate-800' }}">{{ n }} {{ n == 1 ? 'ración' : 'raciones' }}</a>
       {% endfor %}
     </div>
     <p class="text-sm mt-3 font-medium flex items-center gap-1 flex-wrap">{{ (r.calories * serv)|round }} kcal · P{{ (r.protein * serv)|round }} C{{ (r.carbs * serv)|round }} G{{ (r.fat * serv)|round }} · <i data-lucide="clock" class="h-3.5 w-3.5"></i> {{ r.prepTimeMinutes }} min · Fibra {{ (r.fiber * serv)|round }}g</p>

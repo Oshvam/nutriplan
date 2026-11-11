@@ -10,14 +10,14 @@
   </div>
 
   <section class="rounded-2xl bg-white dark:bg-slate-900 shadow-sm p-4" id="shop" data-total="{{ shop.total }}">
-    <div class="flex items-center gap-2 text-sm font-medium">
+    <div class="flex flex-wrap items-center gap-2 text-sm font-medium">
       <span id="shop-count">0/{{ shop.total }} comprados</span>
-      <div class="flex gap-1 ml-2">
+      <div class="flex flex-wrap gap-1 ml-0 sm:ml-2">
         <button data-filter="all" class="px-2.5 py-1 rounded-full bg-slate-800 text-white text-xs">Todos</button>
         <button data-filter="todo" class="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-xs">Pendientes</button>
         <button data-filter="done" class="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-xs">Comprados</button>
       </div>
-      <div class="ml-auto flex gap-2">
+      <div class="flex gap-2 sm:ml-auto">
         <button id="shop-copy" class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 text-xs font-bold inline-flex items-center gap-1"><i data-lucide="copy" class="h-3.5 w-3.5"></i> Copiar</button>
         <button id="shop-reset" class="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-xs">Reiniciar</button>
       </div>

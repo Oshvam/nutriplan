@@ -16,13 +16,13 @@
 
     <div class="bg-slate-50 dark:bg-slate-800/50 px-4 sm:px-6 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 text-xs">
       <div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto min-w-0" id="steps-bar">
-        {% for s in [{'num':1,'label':'Objetivo'},{'num':2,'label':'Datos físicos'},{'num':3,'label':'Actividad'},{'num':4,'label':'Restricciones'}] %}
-        <button type="button" data-stepbtn="{{ s.num }}" data-sel="{{ loop.first ? 1 : 0 }}" class="flex items-center gap-1.5 px-2 sm:px-3 py-1 rounded-md font-medium transition-colors shrink-0 whitespace-nowrap {{ loop.first ? 'bg-emerald-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-700/60' }}">
-          <span class="font-mono tabular-nums">{{ s.num }}.</span><span>{{ s.label }}</span>
+        {% for s in [{'num':1,'label':'Objetivo','short':'Objetivo'},{'num':2,'label':'Datos físicos','short':'Datos'},{'num':3,'label':'Actividad','short':'Actividad'},{'num':4,'label':'Restricciones','short':'Dieta'}] %}
+        <button type="button" data-stepbtn="{{ s.num }}" data-sel="{{ loop.first ? 1 : 0 }}" class="flex items-center gap-1 px-1 sm:gap-1.5 sm:px-3 py-1 rounded-md text-[10px] sm:text-xs font-medium transition-colors shrink-0 whitespace-nowrap {{ loop.first ? 'bg-emerald-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-700/60' }}">
+          <span class="font-mono tabular-nums">{{ s.num }}.</span><span class="sm:hidden">{{ s.short }}</span><span class="hidden sm:inline">{{ s.label }}</span>
         </button>
         {% endfor %}
       </div>
-      <span class="text-slate-400 dark:text-slate-500 font-mono text-[11px] shrink-0">Paso <span id="step-now">1</span> de 4</span>
+      <span class="hidden sm:inline text-slate-400 dark:text-slate-500 font-mono text-[11px] shrink-0">Paso <span id="step-now">1</span> de 4</span>
     </div>
 
     <div class="p-4 sm:p-6 space-y-5 sm:space-y-6">

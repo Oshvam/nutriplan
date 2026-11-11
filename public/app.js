@@ -11,14 +11,45 @@ document.querySelectorAll('[data-theme-toggle]').forEach((b) => b.addEventListen
   applyThemeIcons();
 }));
 
-// Modales (guía clínica + ajustes Mistral)
-const openModal = (id) => { const m = document.getElementById(id); if (m) { m.classList.remove('hidden'); if (window.lucide) lucide.createIcons(); } };
-const closeModals = () => document.querySelectorAll('#modal-guidelines, #modal-settings').forEach((m) => m.classList.add('hidden'));
+// Modales (guía clínica + ajustes): focus trap, scroll lock y Esc.
+let npReturnFocus = null;
+const openModal = (id) => {
+  const m = document.getElementById(id);
+  if (!m) return;
+  npReturnFocus = document.activeElement;
+  m.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  if (window.lucide) lucide.createIcons();
+  const first = m.querySelector('[data-modal-close], button, [href], input, select, textarea');
+  if (first) first.focus();
+};
+const closeModals = () => {
+  let any = false;
+  document.querySelectorAll('#modal-guidelines, #modal-settings').forEach((m) => {
+    if (!m.classList.contains('hidden')) { m.classList.add('hidden'); any = true; }
+  });
+  if (any) {
+    document.body.style.overflow = '';
+    if (npReturnFocus && npReturnFocus.focus) npReturnFocus.focus();
+    npReturnFocus = null;
+  }
+};
 document.querySelectorAll('[data-open-guidelines]').forEach((b) => b.addEventListener('click', () => openModal('modal-guidelines')));
 document.querySelectorAll('[data-open-settings]').forEach((b) => b.addEventListener('click', () => openModal('modal-settings')));
 document.querySelectorAll('[data-modal-close]').forEach((b) => b.addEventListener('click', closeModals));
 document.querySelectorAll('#modal-guidelines, #modal-settings').forEach((m) => m.addEventListener('click', (e) => { if (e.target === m) closeModals(); }));
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModals(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { closeModals(); return; }
+  if (e.key !== 'Tab') return;
+  const open = [...document.querySelectorAll('#modal-guidelines, #modal-settings')].find((m) => !m.classList.contains('hidden'));
+  if (!open) return;
+  const items = [...open.querySelectorAll('a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+    .filter((el) => el.offsetParent !== null);
+  if (!items.length) return;
+  const first = items[0], last = items[items.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+});
 
 // Interacciones NutriPlan (fetch a la API JSON + estado local).
 async function npReq(url, method, body) {
@@ -62,9 +93,12 @@ const askConfirm = (msg, label) => new Promise((resolve) => {
   const yes = document.getElementById('np-confirm-yes');
   const no = document.getElementById('np-confirm-no');
   box.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
   if (window.lucide) lucide.createIcons();
+  setTimeout(() => yes.focus(), 30);
   const done = (v) => {
     box.classList.add('hidden');
+    document.body.style.overflow = '';
     box.removeEventListener('click', onBackdrop);
     document.removeEventListener('keydown', onKey);
     yes.onclick = null; no.onclick = null;
@@ -472,39 +506,66 @@ if (iaGo) iaGo.addEventListener('click', async () => {
   finally { busy(iaGo, false); }
 });
 
-// PWA: registro del SW + popup de instalación.
+// PWA: registro del SW + instalación (banner y botón en Ajustes).
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 }
 (() => {
   const bar = document.getElementById('install-banner');
-  if (!bar) return;
-  if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) return;
+  const settingsBtn = document.getElementById('install-app');
+  const settingsState = document.getElementById('install-state');
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent || '');
   let deferred = null, done = false;
   try { done = localStorage.getItem('np_install_dismissed') === '1'; } catch (e) {}
   const sub = document.getElementById('install-sub'), go = document.getElementById('install-go');
-  const hide = (remember) => { bar.classList.add('hidden'); if (remember) { try { localStorage.setItem('np_install_dismissed', '1'); } catch (e) {} } };
-  document.getElementById('install-no').onclick = () => hide(true);
-  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent || '');
-  if (isIOS && !('BeforeInstallPromptEvent' in window)) {
-    if (!done) {
-      sub.textContent = 'En iPhone: Compartir → «Añadir a pantalla de inicio».';
-      go.textContent = 'Entendido'; go.onclick = () => hide(true);
-      bar.classList.remove('hidden'); if (window.lucide) lucide.createIcons();
+
+  const hide = (remember) => {
+    if (bar) bar.classList.add('hidden');
+    if (remember) { try { localStorage.setItem('np_install_dismissed', '1'); } catch (e) {} }
+  };
+
+  const install = async () => {
+    if (standalone) { toast('Ya está instalada en este dispositivo.'); return; }
+    if (!deferred) {
+      if (isIOS) toast('En iPhone/iPad: Compartir → «Añadir a pantalla de inicio».', { timeout: 9000 });
+      else toast('Abre el menú del navegador (⋮) → «Instalar aplicación».', { timeout: 9000 });
+      return;
     }
-    return;
-  }
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault(); deferred = e;
-    if (!done) { bar.classList.remove('hidden'); if (window.lucide) lucide.createIcons(); }
-  });
-  go.onclick = async () => {
-    if (!deferred) { hide(false); return; }
     deferred.prompt();
     try { await deferred.userChoice; } catch (e) {}
-    deferred = null; hide(true);
+    deferred = null;
+    hide(true);
   };
-  window.addEventListener('appinstalled', () => hide(true));
+
+  if (settingsBtn) settingsBtn.onclick = install;
+  if (settingsState && standalone) settingsState.textContent = 'Ya instalada en este dispositivo.';
+
+  if (bar) {
+    if (!standalone) {
+      document.getElementById('install-no').onclick = () => hide(true);
+      if (go) go.onclick = install;
+      if (isIOS && !('BeforeInstallPromptEvent' in window) && !done) {
+        sub.textContent = 'En iPhone: Compartir → «Añadir a pantalla de inicio».';
+        go.textContent = 'Entendido';
+        go.onclick = () => hide(true);
+        bar.classList.remove('hidden');
+        if (window.lucide) lucide.createIcons();
+      }
+    }
+  }
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferred = e;
+    if (settingsState) settingsState.textContent = 'Lista para instalar con un clic.';
+    if (bar && !done && !standalone) { bar.classList.remove('hidden'); if (window.lucide) lucide.createIcons(); }
+  });
+  window.addEventListener('appinstalled', () => {
+    hide(true);
+    if (settingsState) settingsState.textContent = 'Instalada en este dispositivo.';
+    toast('Aplicación instalada.');
+  });
 })();
 
 // Actualización desde GitHub (solo usuarios con sesión).
