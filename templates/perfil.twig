@@ -17,7 +17,7 @@
     <h1 class="text-xl font-bold mt-2">{{ profile.name ?? user.name ?? 'Mi plan' }}</h1>
     <p class="text-emerald-50 text-sm">{{ goalNames[profile.goal] ?? profile.goal }} · {{ needs.targetCalories }} kcal/día</p>
     <div class="flex flex-wrap justify-center gap-2 mt-3 text-sm font-medium">
-      <a href="/ajustes" class="px-3 py-1.5 rounded-full bg-white text-emerald-700"><i data-lucide="settings" class="h-4 w-4 text-emerald-600 dark:text-emerald-400"></i> Configurar plan</a>
+      <a href="/ajustes" class="px-3 py-1.5 rounded-full bg-white text-emerald-700"><i data-lucide="settings" class="h-4 w-4 text-emerald-600 dark:text-emerald-400"></i> Plan</a>
       <a href="#pautas" class="px-3 py-1.5 rounded-full bg-white/20"><i data-lucide="book-open" class="inline h-4 w-4"></i> Pautas clínicas</a>
       <a href="#ajustes" class="px-3 py-1.5 rounded-full bg-white/20"><i data-lucide="key-round" class="inline h-4 w-4"></i> Ajustes Mistral</a>
     </div>
@@ -27,7 +27,7 @@
     <h2 class="font-bold mb-2">Nombre</h2>
     <form id="name-form" class="flex gap-2">
       <input type="text" id="profile-name" value="{{ profile.name ?? '' }}" class="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent p-2 text-sm" />
-      <button class="px-4 py-2 rounded-full bg-emerald-600 text-white text-sm font-bold">Guardar</button>
+      <button class="px-4 py-2 rounded-full bg-emerald-600 text-white text-sm font-bold" aria-label="Guardar"><i data-lucide="save" class="h-4 w-4 sm:hidden"></i><span class="hidden sm:inline">Guardar</span></button>
     </form>
     <div class="flex flex-wrap gap-4 mt-3 text-sm">
       <label class="flex items-center gap-2"><input type="checkbox" id="tgl-meals" class="w-5 h-5 accent-emerald-600" /> Recordatorios de comidas</label>
