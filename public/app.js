@@ -1,3 +1,14 @@
+﻿// VersiÃ³n de la app (tomada del propio ?v= con el que se sirve este script),
+// para poder cachear el service worker sin quedarnos con una copia vieja del CDN.
+const NP_V = (() => {
+  try {
+    const src = document.currentScript && document.currentScript.src;
+    const m = src && src.match(/[?&]v=([^&]+)/);
+    return m ? m[1] : '1';
+  } catch (e) { return '1'; }
+})();
+const SW_URL = '/sw.js?v=' + encodeURIComponent(NP_V);
+
 // Tema claro/oscuro (clase .dark, como el original)
 const applyThemeIcons = () => {
   const dark = document.documentElement.classList.contains('dark');
@@ -11,7 +22,7 @@ document.querySelectorAll('[data-theme-toggle]').forEach((b) => b.addEventListen
   applyThemeIcons();
 }));
 
-// Modales (guía clínica + ajustes): focus trap, scroll lock y Esc.
+// Modales (guÃ­a clÃ­nica + ajustes): focus trap, scroll lock y Esc.
 let npReturnFocus = null;
 const openModal = (id) => {
   const m = document.getElementById(id);
@@ -61,7 +72,7 @@ async function npReq(url, method, body) {
 }
 const todayIdx = () => (new Date().getDay() + 6) % 7;
 
-// --- UI: toasts, confirmación propia y estado "ocupado" ---
+// --- UI: toasts, confirmaciÃ³n propia y estado "ocupado" ---
 const toast = (msg, opts) => {
   opts = opts || {};
   const box = document.getElementById('np-toasts');
@@ -112,7 +123,7 @@ const askConfirm = (msg, label) => new Promise((resolve) => {
   no.onclick = () => done(false);
 });
 
-// Marca un botón como ocupado (deshabilitado + pulso) mientras corre una petición.
+// Marca un botÃ³n como ocupado (deshabilitado + pulso) mientras corre una peticiÃ³n.
 const busy = (btn, on) => {
   if (!btn) return;
   btn.disabled = !!on;
@@ -121,7 +132,7 @@ const busy = (btn, on) => {
   btn.classList.toggle('animate-pulse', !!on);
 };
 
-// Re-render parcial: sustituye solo las regiones del plan sin recargar la página.
+// Re-render parcial: sustituye solo las regiones del plan sin recargar la pÃ¡gina.
 async function refreshPlanRegions() {
   const r = await fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
   const doc = new DOMParser().parseFromString(await r.text(), 'text/html');
@@ -146,7 +157,7 @@ document.addEventListener('click', async (e) => {
       await refreshPlanRegions();
       toast('Plato sustituido.');
     } else if (act === 'regen') {
-      if (!await askConfirm('¿Regenerar el plan de la semana? Se perderán las comidas marcadas como completadas.', 'Regenerar')) return;
+      if (!await askConfirm('Â¿Regenerar el plan de la semana? Se perderÃ¡n las comidas marcadas como completadas.', 'Regenerar')) return;
       busy(b, true);
       await npReq('/api/plan/regenerate', 'POST');
       await refreshPlanRegions();
@@ -158,14 +169,14 @@ document.addEventListener('click', async (e) => {
       await npReq('/api/plan/apply', 'POST', { dayNumber: dia + 1, slotId: b.dataset.slot, recipe });
       if (act === 'apply-hoy') {
         b.classList.remove('animate-pulse', 'opacity-60', 'pointer-events-none');
-        b.innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5"></i><span>En tu menú</span>';
+        b.innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5"></i><span>En tu menÃº</span>';
         if (window.lucide) lucide.createIcons();
-        toast('Añadido a tu menú de hoy.');
+        toast('AÃ±adido a tu menÃº de hoy.');
       } else {
         location.href = b.dataset.back || '/';
       }
     } else if (act === 'wdel') {
-      if (!await askConfirm('¿Borrar este registro de peso?', 'Borrar')) return;
+      if (!await askConfirm('Â¿Borrar este registro de peso?', 'Borrar')) return;
       const back = { date: b.dataset.date, weight: +b.dataset.weight, note: b.dataset.note || '' };
       await npReq('/api/weight', 'DELETE', { date: b.dataset.date });
       toast('Registro borrado.', { action: { label: 'Deshacer', onClick: async () => {
@@ -175,7 +186,7 @@ document.addEventListener('click', async (e) => {
       b.closest('tr')?.remove();
     } else if (act === 'logout') {
       await npReq('/api/auth/logout', 'POST');
-      // No dejar HTML autenticado en la caché del service worker.
+      // No dejar HTML autenticado en la cachÃ© del service worker.
       if (window.caches) {
         try { const ks = await caches.keys(); await Promise.all(ks.map((k) => caches.delete(k))); } catch (e) {}
       }
@@ -184,7 +195,7 @@ document.addEventListener('click', async (e) => {
       const msg = document.getElementById('ms-msg');
       const model = document.getElementById('ms-model').value;
       busy(b, true);
-      msg.textContent = '…';
+      msg.textContent = 'â€¦';
       await npReq('/api/settings/mistral', 'POST', { model });
       msg.textContent = 'Guardado.';
       toast('Modelo de IA guardado.');
@@ -196,7 +207,7 @@ document.addEventListener('click', async (e) => {
   }
 });
 
-// Refresca un bloque de la página sin recargar (útil tras mutaciones).
+// Refresca un bloque de la pÃ¡gina sin recargar (Ãºtil tras mutaciones).
 async function refreshBlock(id) {
   const r = await fetch(location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
   const doc = new DOMParser().parseFromString(await r.text(), 'text/html');
@@ -310,7 +321,7 @@ if (onb) {
   const live = async () => {
     const f = new FormData(onb);
     const w = parseFloat(f.get('currentWeight')), h = parseFloat(f.get('height'));
-    document.getElementById('imc-val').textContent = (w > 0 && h > 0) ? (w / ((h / 100) ** 2)).toFixed(1) : '–';
+    document.getElementById('imc-val').textContent = (w > 0 && h > 0) ? (w / ((h / 100) ** 2)).toFixed(1) : 'â€“';
     try {
       const q = new URLSearchParams({ goal: f.get('goal'), targetWeeks: f.get('targetWeeks'), gender: f.get('gender'), age: f.get('age'), height: f.get('height'), currentWeight: f.get('currentWeight'), targetWeight: f.get('targetWeight'), activityLevel: f.get('activityLevel') });
       const d = await (await fetch('/api/calc?' + q.toString())).json();
@@ -319,7 +330,7 @@ if (onb) {
       document.getElementById('calc-bmr').textContent = c.bmr;
       document.getElementById('calc-tdee').textContent = c.tdee;
       document.getElementById('calc-kcal').textContent = c.targetCalories;
-      document.getElementById('calc-sub').textContent = c.deficitOrSurplus > 0 ? '+' + c.deficitOrSurplus + ' superávit' : (c.deficitOrSurplus < 0 ? c.deficitOrSurplus + ' déficit' : 'Mantenimiento');
+      document.getElementById('calc-sub').textContent = c.deficitOrSurplus > 0 ? '+' + c.deficitOrSurplus + ' superÃ¡vit' : (c.deficitOrSurplus < 0 ? c.deficitOrSurplus + ' dÃ©ficit' : 'Mantenimiento');
       document.getElementById('calc-p').textContent = c.macros.proteinGrams;
       document.getElementById('calc-psub').textContent = c.macros.proteinPct + '% (' + c.macros.proteinCalories + ' kcal)';
       document.getElementById('calc-c').textContent = c.macros.carbsGrams;
@@ -412,7 +423,7 @@ if (shop) {
   }));
   document.getElementById('shop-reset').onclick = async () => {
     const snapshot = JSON.stringify(store);
-    if (!await askConfirm('¿Reiniciar la lista de la compra? Se desmarcarán todos los productos.', 'Reiniciar')) return;
+    if (!await askConfirm('Â¿Reiniciar la lista de la compra? Se desmarcarÃ¡n todos los productos.', 'Reiniciar')) return;
     Object.keys(store).forEach((k) => delete store[k]);
     localStorage.removeItem('np_shop');
     paint();
@@ -423,10 +434,10 @@ if (shop) {
     } } });
   };
   document.getElementById('shop-copy').onclick = async () => {
-    let txt = '🛒 Lista de la compra — NutriPlan\n', h = '';
+    let txt = 'ðŸ›’ Lista de la compra â€” NutriPlan\n', h = '';
     shop.querySelectorAll('h3, .shop-item').forEach((el) => {
       if (el.tagName === 'H3') { h = el.textContent.trim(); txt += '\n' + h + '\n'; }
-      else if (el.style.display !== 'none') txt += '· ' + el.querySelector('span').textContent.trim().replace(/\s+/g, ' ') + '\n';
+      else if (el.style.display !== 'none') txt += 'Â· ' + el.querySelector('span').textContent.trim().replace(/\s+/g, ' ') + '\n';
     });
     try {
       await navigator.clipboard.writeText(txt);
@@ -452,10 +463,10 @@ if (pushBtn && 'serviceWorker' in navigator) {
   const b64 = (s) => { const b = atob(s.replace(/-/g, '+').replace(/_/g, '/')); const a = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a; };
   pushBtn.onclick = async () => {
     try {
-      const reg = await navigator.serviceWorker.register('/sw.js');
+      const reg = await navigator.serviceWorker.register(SW_URL);
       const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(vapid) });
       await npReq('/api/push/subscribe', 'POST', { subscription: sub.toJSON() });
-      st.textContent = 'activadas ✓'; pushBtn.textContent = 'Probar aviso';
+      st.textContent = 'activadas âœ“'; pushBtn.textContent = 'Probar aviso';
       toast('Notificaciones push activadas.');
       pushBtn.onclick = async () => {
         busy(pushBtn, true);
@@ -476,7 +487,7 @@ if (iaGo) iaGo.addEventListener('click', async () => {
   const profile = JSON.parse(document.getElementById('px').textContent);
   const needs = JSON.parse(document.getElementById('nx').textContent);
   busy(iaGo, true);
-  msg.textContent = 'Generando…';
+  msg.textContent = 'Generandoâ€¦';
   // Esqueleto mientras la IA responde.
   box.innerHTML = '<article class="rounded-2xl bg-slate-50 dark:bg-slate-800 p-4 animate-pulse"><div class="h-4 w-40 bg-slate-200 dark:bg-slate-700 rounded"></div><div class="h-3 w-56 bg-slate-200 dark:bg-slate-700 rounded mt-2"></div><div class="h-3 w-full bg-slate-200 dark:bg-slate-700 rounded mt-3"></div><div class="h-3 w-2/3 bg-slate-200 dark:bg-slate-700 rounded mt-1.5"></div></article>';
   try {
@@ -493,10 +504,10 @@ if (iaGo) iaGo.addEventListener('click', async () => {
     d.recipes.forEach((r) => {
       const el = document.createElement('article');
       el.className = 'rounded-2xl bg-slate-50 dark:bg-slate-800 p-4';
-      el.innerHTML = `<h3 class="font-bold">${r.imageEmoji || '🍲'} ${r.title}</h3>
-        <p class="text-xs text-slate-500">${r.subtitle || ''} · ${r.calories} kcal · <i data-lucide="clock" class="inline h-3.5 w-3.5"></i> ${r.prepTimeMinutes} min</p>
-        <ul class="text-xs mt-1 space-y-0.5">${(r.ingredients || []).map((g) => `<li>· ${g.quantity} ${g.unit} ${g.name}</li>`).join('')}</ul>
-        <div class="flex gap-2 mt-2"><button class="ia-assign px-3 py-1.5 rounded-full bg-emerald-600 text-white text-xs font-bold">Asignar a este día</button></div>`;
+      el.innerHTML = `<h3 class="font-bold">${r.imageEmoji || 'ðŸ²'} ${r.title}</h3>
+        <p class="text-xs text-slate-500">${r.subtitle || ''} Â· ${r.calories} kcal Â· <i data-lucide="clock" class="inline h-3.5 w-3.5"></i> ${r.prepTimeMinutes} min</p>
+        <ul class="text-xs mt-1 space-y-0.5">${(r.ingredients || []).map((g) => `<li>Â· ${g.quantity} ${g.unit} ${g.name}</li>`).join('')}</ul>
+        <div class="flex gap-2 mt-2"><button class="ia-assign px-3 py-1.5 rounded-full bg-emerald-600 text-white text-xs font-bold">Asignar a este dÃ­a</button></div>`;
       el.querySelector('.ia-assign').onclick = async () => {
         const dia = window.__IACTX.dia !== null ? window.__IACTX.dia : todayIdx();
         const slot = window.__IACTX.slot || 'comida';
@@ -510,9 +521,9 @@ if (iaGo) iaGo.addEventListener('click', async () => {
   finally { busy(iaGo, false); }
 });
 
-// PWA: registro del SW + instalación (banner y botón en Ajustes).
+// PWA: registro del SW + instalaciÃ³n (banner y botÃ³n en Ajustes).
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+  window.addEventListener('load', () => navigator.serviceWorker.register(SW_URL).catch(() => {}));
 }
 (() => {
   const bar = document.getElementById('install-banner');
@@ -530,10 +541,10 @@ if ('serviceWorker' in navigator) {
   };
 
   const install = async () => {
-    if (standalone) { toast('Ya está instalada en este dispositivo.'); return; }
+    if (standalone) { toast('Ya estÃ¡ instalada en este dispositivo.'); return; }
     if (!deferred) {
-      if (isIOS) toast('En iPhone/iPad: Compartir → «Añadir a pantalla de inicio».', { timeout: 9000 });
-      else toast('Abre el menú del navegador (⋮) → «Instalar aplicación».', { timeout: 9000 });
+      if (isIOS) toast('En iPhone/iPad: Compartir â†’ Â«AÃ±adir a pantalla de inicioÂ».', { timeout: 9000 });
+      else toast('Abre el menÃº del navegador (â‹®) â†’ Â«Instalar aplicaciÃ³nÂ».', { timeout: 9000 });
       return;
     }
     deferred.prompt();
@@ -550,7 +561,7 @@ if ('serviceWorker' in navigator) {
       document.getElementById('install-no').onclick = () => hide(true);
       if (go) go.onclick = install;
       if (isIOS && !('BeforeInstallPromptEvent' in window) && !done) {
-        sub.textContent = 'En iPhone: Compartir → «Añadir a pantalla de inicio».';
+        sub.textContent = 'En iPhone: Compartir â†’ Â«AÃ±adir a pantalla de inicioÂ».';
         go.textContent = 'Entendido';
         go.onclick = () => hide(true);
         bar.classList.remove('hidden');
@@ -568,42 +579,42 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('appinstalled', () => {
     hide(true);
     if (settingsState) settingsState.textContent = 'Instalada en este dispositivo.';
-    toast('Aplicación instalada.');
+    toast('AplicaciÃ³n instalada.');
   });
 })();
 
-// Actualización desde GitHub (solo usuarios con sesión).
+// ActualizaciÃ³n desde GitHub (solo usuarios con sesiÃ³n).
 (() => {
   const chk = document.getElementById('upd-check');
   if (!chk) return;
   const st = document.getElementById('upd-state'), run = document.getElementById('upd-run'), msg = document.getElementById('upd-msg');
   chk.onclick = async () => {
-    st.textContent = 'comprobando…'; msg.textContent = ''; msg.style.color = '';
+    st.textContent = 'comprobandoâ€¦'; msg.textContent = ''; msg.style.color = '';
     try {
       const d = await npReq('/api/update', 'GET');
-      st.textContent = 'instalada ' + d.current + ' · última ' + d.latest;
+      st.textContent = 'instalada ' + d.current + ' Â· Ãºltima ' + d.latest;
       if (d.available) {
         msg.textContent = (d.notes || '').slice(0, 300);
         run.classList.remove('hidden');
-      } else { msg.textContent = 'Ya estás en la última versión.'; run.classList.add('hidden'); }
+      } else { msg.textContent = 'Ya estÃ¡s en la Ãºltima versiÃ³n.'; run.classList.add('hidden'); }
     } catch (err) { st.textContent = 'error'; msg.textContent = err.message; }
   };
   run.onclick = async () => {
-    if (!await askConfirm('Se descargará la última versión y se aplicará. ¿Continuar?', 'Actualizar')) return;
+    if (!await askConfirm('Se descargarÃ¡ la Ãºltima versiÃ³n y se aplicarÃ¡. Â¿Continuar?', 'Actualizar')) return;
     busy(run, true);
-    msg.style.color = ''; msg.textContent = 'Actualizando… puede tardar un minuto.';
+    msg.style.color = ''; msg.textContent = 'Actualizandoâ€¦ puede tardar un minuto.';
     try {
       const d = await npReq('/api/update', 'POST');
       msg.style.color = '#059669'; msg.textContent = d.message;
       st.textContent = 'instalada ' + (d.to || d.current || '');
       run.classList.add('hidden');
-      toast('Actualización aplicada.');
+      toast('ActualizaciÃ³n aplicada.');
     } catch (err) { msg.style.color = '#dc2626'; msg.textContent = err.message; toast(err.message, { error: true }); }
     finally { busy(run, false); }
   };
 })();
 
-// Recetario: filtros y búsqueda reflejados en la URL, sin recargar (debounce en el texto).
+// Recetario: filtros y bÃºsqueda reflejados en la URL, sin recargar (debounce en el texto).
 (() => {
   const form = document.getElementById('recetas-form');
   if (!form) return;
