@@ -16,6 +16,9 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          # Fijada a la versión verificada en local: en 3.50+ el análisis
+          # falla porque package:flutter/material.dart está deprecado.
+          flutter-version: '3.41.4'
 
       - name: Dependencias
         working-directory: app-mobil
