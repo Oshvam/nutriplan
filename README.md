@@ -145,6 +145,27 @@ php tools/build-recipes-index.php
 Los estáticos van con `Cache-Control: immutable` (1 año) y un `?v=<version>`
 tomado de `version.txt`: al subir versión, los navegadores piden el CSS/JS nuevo.
 
+## Service worker (offline)
+
+`public/sw.js` (caché `nutriplan-v4`) usa una estrategia por tipo de recurso:
+
+| Recurso | Estrategia |
+| --- | --- |
+| `/assets/*`, `/icons/*` | Caché primero (nombres versionados) |
+| HTML y navegación | Stale-while-revalidate + pantalla «Sin conexión» |
+| `/api/*` | Siempre red (nunca se cachean datos de usuario) |
+
+Al cerrar sesión se borran las cachés para no dejar HTML autenticado en el equipo.
+
+## Tests
+
+Comprobaciones del núcleo sin base de datos (cálculo nutricional, reparto
+calórico, lista de la compra, peso, búsqueda/filtros del catálogo y plan semanal):
+
+```bash
+php tests/run.php    # devuelve 0 si todo pasa
+```
+
 ## Datos por cuenta
 
 Igual que el original: tabla `kv` con `nutriplan_profile`,

@@ -8,7 +8,9 @@ if (!is_array($all)) {
     fwrite(STDERR, "recipes.json ilegible\n");
     exit(1);
 }
-// Campos que necesitan plan, catálogo y recomendaciones. Sin ingredientes ni pasos.
+// Campos que necesitan plan, catálogo y recomendaciones. Sin ingredientes ni pasos,
+// pero con un resumen de ingredientes (texto de nombres y categorías) para buscar,
+// filtrar dietas y puntuar recomendaciones sin cargar la receta completa.
 $keep = ['id','title','subtitle','mealTypes','prepTimeMinutes','prepCategory','calorieCategory',
          'calories','protein','carbs','fat','fiber','imageEmoji','tags','allergens','suitableForGoals'];
 $out = [];
@@ -17,6 +19,16 @@ foreach ($all as $r) {
     foreach ($keep as $k) {
         if (array_key_exists($k, $r)) $row[$k] = $r[$k];
     }
+    $names = [];
+    $cats = [];
+    foreach (($r['ingredients'] ?? []) as $g) {
+        $n = mb_strtolower(trim((string)($g['name'] ?? '')));
+        if ($n !== '') $names[] = $n;
+        $c = (string)($g['category'] ?? '');
+        if ($c !== '') $cats[$c] = true;
+    }
+    $row['ing'] = implode(' ', array_values(array_unique($names)));
+    $row['cats'] = array_keys($cats);
     $out[] = $row;
 }
 $json = json_encode($out, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

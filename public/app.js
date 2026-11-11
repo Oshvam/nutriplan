@@ -175,6 +175,10 @@ document.addEventListener('click', async (e) => {
       b.closest('tr')?.remove();
     } else if (act === 'logout') {
       await npReq('/api/auth/logout', 'POST');
+      // No dejar HTML autenticado en la caché del service worker.
+      if (window.caches) {
+        try { const ks = await caches.keys(); await Promise.all(ks.map((k) => caches.delete(k))); } catch (e) {}
+      }
       location.href = '/';
     } else if (b.hasAttribute('data-ms')) {
       const msg = document.getElementById('ms-msg');
